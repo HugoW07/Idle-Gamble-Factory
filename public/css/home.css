@@ -26,8 +26,8 @@ body {
 }
 
 .game-area {
-  width: 700px; /* Increase the width */
-  height: 700px; /* Increase the height */
+  width: 1000px; /* Increase the width */
+  height: 1000px; /* Increase the height */
   border: 5px solid rgba(255, 215, 0, 0.8); /* Semi-transparent gold border */
   position: relative;
   background-color: transparent; /* Fully transparent background */
@@ -131,9 +131,10 @@ body {
 /* Bumper Styles */
 .game-area .bumper {
   position: absolute;
-  width: 50px;
-  height: 50px;
+  width: 100px;
+  height: 100px;
   background-color: rgba(148, 0, 211, 0.8); /* Purple */
+  border: 5px solid rgba(255, 215, 0, 0.8);
   color: #ffffff;
   border-radius: 50%; /* Make the bumpers round */
   display: flex;
@@ -143,6 +144,7 @@ body {
   font-weight: bold;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8); /* Add shadow for better visibility */
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); /* Add a subtle shadow for depth */
+  user-select: none;
 }
 
 /* Position the bumpers evenly in a hexagonal pattern */
@@ -188,6 +190,7 @@ body {
   font-size: 24px;
   color: #00ff00; /* Green */
   font-weight: bold;
+  user-select: none;
 }
 
 /* Spikes at the bottom */
