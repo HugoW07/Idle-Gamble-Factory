@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Idle Gamble Factory</title>
+    <link rel="stylesheet" href="/css/home.css" />
+    <link rel="icon" href="/assets/Icon.png" />
+    <script src="/scripts/home.js" defer></script>
+  </head>
+  <body>
+    <div class="game-container">
+      <!-- Main Game Area -->
+      <div class="game-area">
+        <div class="score-display">
+          <span><%= money.user %></span>
+        </div>
+        <div class="clickable-area">
+          <!-- Money signs will drop here -->
+          <div id="money-signs"></div>
+          <!-- Bumpers -->
+          <div class="bumper" data-effect="-10.0K">-10.0K</div>
+          <div class="bumper" data-effect="x1.00K">x1.00K</div>
+          <div class="bumper" data-effect="-5.0K">-5.0K</div>
+          <div class="bumper" data-effect="x0.5K">x0.5K</div>
+          <div class="bumper" data-effect="-1.0K">-1.0K</div>
+          <div class="bumper" data-effect="x2">x2</div>
+        </div>
+        <div class="unlock-buttons">
+          <button class="unlock-button" data-cost="50">UNLOCK $50</button>
+          <button class="unlock-button" data-cost="500">UNLOCK $500</button>
+          <button class="unlock-button" data-cost="5000">UNLOCK $5.0K</button>
+          <button class="unlock-button" data-cost="50000">UNLOCK $50.0K</button>
+        </div>
+      </div>
+
+      <!-- Sidebar with Stats and Upgrades -->
+      <div class="sidebar">
+        <div class="stats">
+          <div class="bonus">
+            <span>x2 Bonus</span>
+          </div>
+          <div class="current-income">
+            <span>$<%= income.current %></span>
+          </div>
+          <div class="income-per-second">
+            <span>~$<%= income.perSecond %> p.s.</span>
+          </div>
+        </div>
+
+        <div class="upgrades">
+          <!-- Upgrade slots -->
+          <div class="upgrade-slot"></div>
+          <div class="upgrade-slot"></div>
+          <div class="upgrade-slot"></div>
+          <div class="upgrade-slot"></div>
+          <div class="upgrade-slot"></div>
+          <div class="upgrade-slot"></div>
+          <div class="upgrade-slot"></div>
+          <div class="upgrade-slot"></div>
+          <div class="upgrade-slot"></div>
+          <div class="upgrade-slot"></div>
+          <div class="upgrade-slot"></div>
+          <div class="upgrade-slot"></div>
+        </div>
+
+        <div class="special-upgrade">
+          <div class="bumper-upgrade">
+            <span>BUMPER UPGRADE</span>
+            <span>Cost: $<%= upgrades.bumper.cost %></span>
+            <button id="upgrade-bumper">Upgrade Bumper</button>
+          </div>
+        </div>
+
+        <div class="base-stats">
+          <div class="base-income">
+            <span>BASE INCOME</span>
+            <span><%= baseIncome.level %> > <%= baseIncome.nextLevel %></span>
+            <span>$<%= baseIncome.value %></span>
+          </div>
+          <div class="speed">
+            <span>SPEED</span>
+            <span><%= speed.level %> > <%= speed.nextLevel %></span>
+            <span>$<%= speed.value %></span>
+          </div>
+        </div>
+
+        <div class="next-level">
+          <span>NEXT LEVEL</span>
+          <span>$<%= nextLevelCost %></span>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

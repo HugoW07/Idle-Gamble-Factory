@@ -1,0 +1,201 @@
+/* Reset default styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background-image: url("/assets/GameBG.jpg"); /* Set GameBG as the background */
+  background-size: cover; /* Ensure the background covers the entire viewport */
+  background-position: center; /* Center the background */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  overflow: hidden; /* Prevent scrolling */
+  color: #ffffff; /* Default text color for better visibility */
+}
+
+.game-container {
+  display: flex;
+  gap: 20px;
+  position: relative;
+  z-index: 1; /* Ensure the game container is above the background */
+}
+
+.game-area {
+  width: 700px; /* Increase the width */
+  height: 700px; /* Increase the height */
+  border: 5px solid rgba(255, 215, 0, 0.8); /* Semi-transparent gold border */
+  position: relative;
+  background-color: transparent; /* Fully transparent background */
+  backdrop-filter: blur(5px); /* Add a slight blur effect for aesthetics */
+  overflow: hidden; /* Prevent scrolling */
+}
+
+.score-display {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  font-size: 24px;
+  font-weight: bold;
+  color: #ffd700;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8); /* Add shadow for better visibility */
+}
+
+.clickable-area {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.unlock-buttons {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  display: flex;
+  gap: 20px;
+}
+
+.unlock-button {
+  background-color: rgba(
+    47,
+    79,
+    79,
+    0.8
+  ); /* Semi-transparent dark slate gray */
+  color: #ff0000; /* Red text */
+  border: none;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8); /* Add shadow for better visibility */
+}
+
+.sidebar {
+  width: 300px;
+  height: 700px; /* Match the height of the game area */
+  background-color: rgba(255, 255, 255, 0.2); /* Fully transparent sidebar */
+  backdrop-filter: blur(5px); /* Add a slight blur effect for transparency */
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 10px;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); /* Add a subtle shadow for depth */
+}
+
+.stats {
+  display: flex;
+  gap: 10px;
+}
+
+.bonus,
+.current-income,
+.income-per-second,
+.base-income,
+.speed,
+.next-level {
+  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black */
+  color: #ffffff;
+  padding: 10px;
+  text-align: center;
+  border-radius: 5px;
+}
+
+.upgrades {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.upgrade-slot {
+  background-color: rgba(210, 180, 140, 0.8); /* Semi-transparent tan */
+  height: 50px;
+  border-radius: 5px;
+}
+
+.special-upgrade {
+  margin-top: 20px;
+}
+
+.bumper {
+  background-color: rgba(46, 139, 87, 0.8); /* Semi-transparent sea green */
+  color: #ffffff;
+  padding: 10px;
+  text-align: center;
+}
+
+/* Bumper Styles */
+.game-area .bumper {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  background-color: rgba(148, 0, 211, 0.8); /* Purple */
+  color: #ffffff;
+  border-radius: 50%; /* Make the bumpers round */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 16px;
+  font-weight: bold;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8); /* Add shadow for better visibility */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); /* Add a subtle shadow for depth */
+}
+
+/* Position the bumpers evenly across the game area */
+.game-area .bumper:nth-child(1) {
+  top: 20%;
+  left: 20%;
+}
+.game-area .bumper:nth-child(2) {
+  top: 20%;
+  right: 20%;
+}
+.game-area .bumper:nth-child(3) {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+.game-area .bumper:nth-child(4) {
+  bottom: 20%;
+  left: 20%;
+}
+.game-area .bumper:nth-child(5) {
+  bottom: 20%;
+  right: 20%;
+}
+.game-area .bumper:nth-child(6) {
+  top: 80%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Money Sign Styles */
+#money-signs {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+#money-signs span {
+  position: absolute;
+  font-size: 24px;
+  color: #00ff00; /* Green */
+  font-weight: bold;
+  animation: fall 2s linear infinite;
+}
+
+@keyframes fall {
+  0% {
+    top: 0;
+  }
+  100% {
+    top: 100%;
+  }
+}
