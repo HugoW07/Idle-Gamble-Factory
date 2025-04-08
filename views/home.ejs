@@ -13,18 +13,18 @@
       <!-- Main Game Area -->
       <div class="game-area">
         <div class="score-display">
-          <span><%= money.user %></span>
+          <span>1000</span>
         </div>
         <div class="clickable-area">
           <!-- Money signs will drop here -->
           <div id="money-signs"></div>
           <!-- Bumpers -->
-          <div class="bumper" data-effect="+2">+2</div>
-          <div class="bumper" data-effect="+2">+2</div>
-          <div class="bumper" data-effect="+2">+2</div>
-          <div class="bumper" data-effect="+2">+2</div>
-          <div class="bumper" data-effect="+2">+2</div>
-          <div class="bumper" data-effect="+2">+2</div>
+          <div class="bumper" data-effect="+1">+1</div>
+          <div class="bumper" data-effect="+1">+1</div>
+          <div class="bumper" data-effect="+1">+1</div>
+          <div class="bumper" data-effect="+1">+1</div>
+          <div class="bumper" data-effect="+1">+1</div>
+          <div class="bumper" data-effect="+1">+1</div>
           <!-- Spikes at the bottom -->
           <div class="spikes"></div>
         </div>
@@ -37,10 +37,10 @@
             <span>x2 Bonus</span>
           </div>
           <div class="current-income">
-            <span>$<%= income.current %></span>
+            <span>$1.0</span>
           </div>
           <div class="income-per-second">
-            <span>~$<%= income.perSecond %> p.s.</span>
+            <span>~$0.7 p.s.</span>
           </div>
         </div>
 
@@ -60,30 +60,41 @@
           <div class="upgrade-slot"></div>
         </div>
 
-        <div class="special-upgrade">
-          <div class="bumper-upgrade">
-            <span>BUMPER UPGRADE</span>
-            <span>Cost: $<%= upgrades.bumper.cost %></span>
+        <div class="special-upgrades">
+          <!-- Bumper Upgrade -->
+          <div class="bumper-upgrade upgrade-block">
+            <span class="title">BUMPER UPGRADE</span>
+            <span class="level">Level: 1</span>
+            <span class="cost">Cost: $10</span>
             <button id="upgrade-bumper">Upgrade Bumper</button>
           </div>
-        </div>
 
-        <div class="base-stats">
-          <div class="base-income">
-            <span>BASE INCOME</span>
-            <span><%= baseIncome.level %> > <%= baseIncome.nextLevel %></span>
-            <span>$<%= baseIncome.value %></span>
+          <!-- Base Income Upgrade -->
+          <div class="base-income upgrade-block">
+            <span class="title">BASE INCOME</span>
+            <span>1 > 2</span>
+            <span>$1</span>
+            <div class="upgrade-button-container">
+              <span id="base-income-cost">$10</span>
+              <button id="upgrade-base-income">Upgrade Base Income</button>
+            </div>
           </div>
-          <div class="speed">
-            <span>SPEED</span>
-            <span><%= speed.level %> > <%= speed.nextLevel %></span>
-            <span>$<%= speed.value %></span>
+
+          <!-- Speed Upgrade -->
+          <div class="speed upgrade-block">
+            <span class="title">SPEED</span>
+            <span>1 > 2</span>
+            <span>$1</span>
+            <div class="upgrade-button-container">
+              <span id="speed-cost">$10</span>
+              <button id="upgrade-speed">Upgrade Speed</button>
+            </div>
           </div>
         </div>
 
         <div class="next-level">
           <span>NEXT LEVEL</span>
-          <span>$<%= nextLevelCost %></span>
+          <span>$25000</span>
         </div>
       </div>
     </div>

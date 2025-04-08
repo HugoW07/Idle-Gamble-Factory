@@ -112,20 +112,92 @@ body {
 }
 
 .upgrade-slot {
-  background-color: rgba(210, 180, 140, 0.8); /* Semi-transparent tan */
+  background-color: #ffd700;
   height: 50px;
   border-radius: 5px;
 }
 
-.special-upgrade {
-  margin-top: 20px;
+/* Upgraded special upgrades section */
+.special-upgrades {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 15px;
 }
 
-.bumper {
-  background-color: rgba(46, 139, 87, 0.8); /* Semi-transparent sea green */
-  color: #ffffff;
-  padding: 10px;
+.upgrade-block {
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.upgrade-block .title {
+  font-weight: bold;
+  color: #ffd700; /* Gold color for titles */
+  font-size: 16px;
+  margin-bottom: 5px;
+}
+
+.upgrade-block span {
+  display: block;
   text-align: center;
+}
+
+.upgrade-button-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  margin-top: 5px;
+  width: 100%;
+}
+
+#base-income-cost,
+#speed-cost,
+.bumper-upgrade .cost {
+  font-size: 14px;
+  color: #ffd700; /* Gold color for cost */
+}
+
+#upgrade-base-income,
+#upgrade-speed,
+#upgrade-bumper {
+  background-color: rgba(
+    47,
+    79,
+    79,
+    0.8
+  ); /* Semi-transparent dark slate gray */
+  color: #ffd700; /* Gold text */
+  border: 2px solid #ffd700;
+  padding: 5px 10px;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: background-color 0.3s, transform 0.2s;
+  width: 100%;
+}
+
+#upgrade-base-income:hover,
+#upgrade-speed:hover,
+#upgrade-bumper:hover {
+  background-color: rgba(64, 105, 105, 0.8); /* Slightly lighter on hover */
+  transform: scale(1.05);
+}
+
+#upgrade-base-income:active,
+#upgrade-speed:active,
+#upgrade-bumper:active {
+  transform: scale(0.95);
+}
+
+.next-level {
+  margin-top: auto; /* Push to the bottom */
+  padding: 10px;
 }
 
 /* Bumper Styles */
@@ -205,4 +277,20 @@ body {
   background-size: 20px 30px;
   background-position: 0 0;
   z-index: 5;
+}
+
+@media screen and (min-width: 1601px) {
+  .game-container {
+    gap: 30px;
+  }
+
+  .game-area {
+    width: 800px;
+    height: 800px;
+  }
+
+  .sidebar {
+    width: 300px;
+    height: 700px;
+  }
 }

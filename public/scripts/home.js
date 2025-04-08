@@ -4,67 +4,172 @@ const clickableArea = document.querySelector(".clickable-area");
 const moneySignsContainer = document.getElementById("money-signs");
 const bumpers = document.querySelectorAll(".bumper");
 const upgradeBumperButton = document.getElementById("upgrade-bumper");
-const baseIncomeValue = parseFloat(
-  document
-    .querySelector(".base-income span:nth-child(3)")
-    .textContent.replace("$", "")
+
+// Base income elements
+const baseIncomeElement = document.querySelector(
+  ".base-income span:nth-child(3)"
 );
+const baseIncomeLevelElement = document.querySelector(
+  ".base-income span:nth-child(2)"
+);
+const upgradeBaseIncomeButton = document.getElementById("upgrade-base-income");
+const baseIncomeUpgradeCostElement =
+  document.getElementById("base-income-cost");
+
+// Speed elements
+const speedElement = document.querySelector(".speed span:nth-child(3)");
+const speedLevelElement = document.querySelector(".speed span:nth-child(2)");
+const upgradeSpeedButton = document.getElementById("upgrade-speed");
+const speedUpgradeCostElement = document.getElementById("speed-cost");
+
+// Bumper elements
+const bumperLevelElement = document.querySelector(".bumper-upgrade .level");
+const bumperCostElement = document.querySelector(".bumper-upgrade .cost");
 
 // Initialize game state
 let money = parseFloat(scoreDisplay.textContent) || 0; // Current money
-let incomePerClick = 1; // Money earned per click
-let incomePerSecond = 0; // Money earned per second
-let bumperLevel = 1; // Bumper level
-let bumperMultiplier = 1; // Initial bumper multiplier
 
-// Bumper upgrade cost
-const bumperUpgradeCost = 100;
+// Base Income stats
+let baseIncomeLevel = 1;
+let baseIncomeValue = 1; // Start at $1
+let baseIncomeUpgradeCost = 10; // Initial upgrade cost
+
+// Speed stats
+let speedLevel = 1;
+let speedValue = 1; // Start at $1
+let speedUpgradeCost = 10; // Initial upgrade cost
+
+// Bumper stats
+let bumperLevel = 1;
+let bumperValue = 1; // Start at $1
+let bumperUpgradeCost = 10; // Initial upgrade cost
+let bumperMultiplier = 1; // Initial bumper multiplier
 
 // Physics settings - optimized for 60 FPS
 const FPS = 60;
 const frameTime = 1000 / FPS;
-const gravity = 0.5; // Reduced for smoother movement
-const bounceFactor = 0.85; // Increased for better bounce
-const frictionFactor = 0.99; // Slight friction for more natural movement
+const gravity = 0.5;
+const bounceFactor = 0.85;
+const frictionFactor = 0.99;
 
 // Function to update the UI
 function updateUI() {
+  // Update money display
   scoreDisplay.textContent = `$${money.toFixed(2)}`;
+
+  // Update base income display
+  baseIncomeElement.textContent = `$${baseIncomeValue}`;
+  baseIncomeLevelElement.textContent = `${baseIncomeLevel} > ${
+    baseIncomeLevel + 1
+  }`;
+  baseIncomeUpgradeCostElement.textContent = `$${baseIncomeUpgradeCost}`;
+
+  // Update speed display
+  speedElement.textContent = `$${speedValue}`;
+  speedLevelElement.textContent = `${speedLevel} > ${speedLevel + 1}`;
+  speedUpgradeCostElement.textContent = `$${speedUpgradeCost}`;
+
+  // Update bumper display
+  bumperLevelElement.textContent = `Level: ${bumperLevel}`;
+  bumperCostElement.textContent = `Cost: $${bumperUpgradeCost}`;
+
+  // Update bumper effect text on the game area
+  bumpers.forEach((bumper) => {
+    bumper.dataset.effect = `+${bumperValue}`;
+    bumper.textContent = `+${bumperValue}`;
+  });
 }
 
 // Clickable area: Earn money on click
 clickableArea.addEventListener("click", () => {
-  money += incomePerClick * bumperMultiplier;
+  money += baseIncomeValue * bumperMultiplier;
   updateUI();
 });
 
-// Automatically increase money based on income per second
-setInterval(() => {
-  money += incomePerSecond;
-  updateUI();
-}, 1000);
+// Base Income upgrade logic
+upgradeBaseIncomeButton.addEventListener("click", () => {
+  if (money >= baseIncomeUpgradeCost) {
+    money -= baseIncomeUpgradeCost;
+    baseIncomeLevel++;
+
+    // Increase the base income value by 1 each level
+    baseIncomeValue += 1;
+
+    // Increase the cost for next upgrade
+    baseIncomeUpgradeCost = Math.round(baseIncomeUpgradeCost * 1.2);
+
+    updateUI();
+  } else {
+    alert("Not enough money for base income upgrade!");
+  }
+});
+
+// Speed upgrade logic
+upgradeSpeedButton.addEventListener("click", () => {
+  if (money >= speedUpgradeCost) {
+    money -= speedUpgradeCost;
+    speedLevel++;
+
+    // Increase the speed value by 1 each level
+    speedValue += 1;
+
+    // Increase the cost for next upgrade
+    speedUpgradeCost = Math.round(speedUpgradeCost * 1.2);
+
+    // Update spawn rate for money signs based on speed
+    updateMoneySpawnRate();
+
+    updateUI();
+  } else {
+    alert("Not enough money for speed upgrade!");
+  }
+});
 
 // Bumper upgrade logic
 upgradeBumperButton.addEventListener("click", () => {
   if (money >= bumperUpgradeCost) {
     money -= bumperUpgradeCost;
     bumperLevel++;
-    bumperMultiplier *= 1.5; // Increase multiplier by 50% per upgrade
+
+    // Increase the bumper value by 1 each level
+    bumperValue += 1;
+
+    // Increase the bumper multiplier slightly
+    bumperMultiplier += 0.1;
+
+    // Increase the cost for next upgrade
+    bumperUpgradeCost = Math.round(bumperUpgradeCost * 1.2);
+
     updateUI();
   } else {
-    alert("Not enough money!");
+    alert("Not enough money for bumper upgrade!");
   }
 });
 
+// Function to update money spawn rate based on speed
+function updateMoneySpawnRate() {
+  // Clear existing interval
+  if (window.moneySpawnInterval) {
+    clearInterval(window.moneySpawnInterval);
+  }
+
+  // Calculate spawn rate based on speed (higher speed = faster spawn)
+  const baseSpawnTime = 3000; // 3 seconds base time
+  const spawnTime = Math.max(300, baseSpawnTime - speedValue * 50); // Minimum 0.3 seconds
+
+  // Create new interval with updated spawn rate
+  window.moneySpawnInterval = setInterval(() => {
+    const physics = createMoneySign();
+    activeMoneyPhysics.push(physics);
+  }, spawnTime);
+}
+
 // Function to create a money sign with improved physics
 function createMoneySign() {
-  // Use base income value for money signs
-  let moneyValue = baseIncomeValue;
-
-  // Create the money sign element
+  // Use the current base income value for money signs
   const moneySign = document.createElement("span");
   moneySign.classList.add("money-sign");
-  moneySign.textContent = `$${moneyValue}`;
+  moneySign.textContent = `$${baseIncomeValue}`;
 
   // Position the money sign in the center with a little randomness (±5%)
   moneySign.style.left = `${50 + (Math.random() * 10 - 5)}%`;
@@ -84,6 +189,7 @@ function createMoneySign() {
     height: 0,
     collisions: new Set(), // Track which bumpers we've collided with recently
     active: true,
+    value: baseIncomeValue, // Store the current base income value
   };
 
   // Measure the element after it's rendered
@@ -98,12 +204,6 @@ function createMoneySign() {
 
 // Array to store all active money signs
 const activeMoneyPhysics = [];
-
-// Create new money sign every 3 seconds
-setInterval(() => {
-  const physics = createMoneySign();
-  activeMoneyPhysics.push(physics);
-}, 3000);
 
 // Main game loop running at 60 FPS
 setInterval(() => {
@@ -221,7 +321,7 @@ setInterval(() => {
 
 // Apply bumper effects
 function applyBumperEffect(effect) {
-  // For +2 bumpers
+  // For + bumpers
   if (effect.startsWith("+")) {
     // Extract numeric value
     const value = parseFloat(effect.replace("+", ""));
@@ -245,5 +345,11 @@ function applyBumperEffect(effect) {
   updateUI();
 }
 
-// Initial UI update
-updateUI();
+// Initialize after DOM is fully loaded
+document.addEventListener("DOMContentLoaded", () => {
+  // Set initial values
+  updateUI();
+
+  // Initialize money spawn interval
+  updateMoneySpawnRate();
+});
