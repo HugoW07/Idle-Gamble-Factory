@@ -203,8 +203,8 @@ body {
 /* Bumper Styles */
 .game-area .bumper {
   position: absolute;
-  width: 100px;
-  height: 100px;
+  width: 75px;
+  height: 75px;
   background-color: rgba(148, 0, 211, 0.8); /* Purple */
   border: 5px solid rgba(255, 215, 0, 0.8);
   color: #ffffff;
@@ -219,32 +219,46 @@ body {
   user-select: none;
 }
 
-/* Position the bumpers evenly in a hexagonal pattern */
-.game-area .bumper:nth-child(1) {
-  top: 25%;
-  left: 25%;
+/* Bumpers */
+.game-area .bumper-1 {
+  top: 15%;
+  left: 20%;
 }
-.game-area .bumper:nth-child(2) {
-  top: 25%;
-  right: 25%;
-}
-.game-area .bumper:nth-child(3) {
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-.game-area .bumper:nth-child(4) {
-  bottom: 25%;
-  left: 25%;
-}
-.game-area .bumper:nth-child(5) {
-  bottom: 25%;
-  right: 25%;
-}
-.game-area .bumper:nth-child(6) {
-  top: 75%;
+.game-area .bumper-2 {
+  top: 15%;
   left: 50%;
   transform: translateX(-50%);
+}
+.game-area .bumper-3 {
+  top: 15%;
+  right: 20%;
+}
+
+/* Second row - 2 bumpers */
+.game-area .bumper-4 {
+  top: 50%;
+  left: 30%;
+  transform: translateY(-50%);
+}
+.game-area .bumper-5 {
+  top: 50%;
+  right: 30%;
+  transform: translateY(-50%);
+}
+
+/* Third row - 3 bumpers */
+.game-area .bumper-6 {
+  bottom: 15%;
+  left: 20%;
+}
+.game-area .bumper-7 {
+  bottom: 15%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.game-area .bumper-8 {
+  bottom: 15%;
+  right: 20%;
 }
 
 /* Money Sign Styles */
