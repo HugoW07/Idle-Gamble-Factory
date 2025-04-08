@@ -215,6 +215,10 @@ setInterval(() => {
     const physics = activeMoneyPhysics[i];
     if (!physics.active) continue;
 
+    // Store previous position for continuous collision detection
+    const prevX = physics.x;
+    const prevY = physics.y;
+
     // Apply gravity
     physics.vy += gravity;
 
@@ -225,14 +229,17 @@ setInterval(() => {
     physics.x += physics.vx;
     physics.y += physics.vy;
 
-    // Apply position to DOM element
-    physics.element.style.left = `${(physics.x / gameAreaWidth) * 100}%`;
-    physics.element.style.top = `${physics.y}px`;
-
     // Get element rect for collision detection
     const moneyRect = physics.element.getBoundingClientRect();
 
-    // Check collision with each bumper
+    // Calculate velocity magnitude - used to identify fast-moving objects
+    const velocityMagnitude = Math.sqrt(
+      physics.vx * physics.vx + physics.vy * physics.vy
+    );
+
+    // Check collision with each bumper - using continuous collision detection for fast objects
+    let collisionDetected = false;
+
     bumpers.forEach((bumper) => {
       const bumperRect = bumper.getBoundingClientRect();
       const bumperEffect = bumper.dataset.effect;
@@ -240,13 +247,96 @@ setInterval(() => {
       // Skip if we recently collided with this bumper
       if (physics.collisions.has(bumperEffect)) return;
 
-      // Check for collision
-      if (
-        moneyRect.left < bumperRect.right &&
-        moneyRect.right > bumperRect.left &&
-        moneyRect.top < bumperRect.bottom &&
-        moneyRect.bottom > bumperRect.top
-      ) {
+      // Continuous collision detection for fast-moving objects
+      let collision = false;
+
+      if (velocityMagnitude > 5) {
+        // Only use advanced detection for fast-moving objects
+        // Calculate line segment from previous to current position
+        const dx = physics.x - prevX;
+        const dy = physics.y - prevY;
+
+        // Calculate bumper center
+        const bumperCenterX = (bumperRect.left + bumperRect.right) / 2;
+        const bumperCenterY = (bumperRect.top + bumperRect.bottom) / 2;
+
+        // Calculate money sign center (using current position)
+        const moneyCenterX = (moneyRect.left + moneyRect.right) / 2;
+        const moneyCenterY = (moneyRect.top + moneyRect.bottom) / 2;
+
+        // Calculate previous money sign center
+        const prevMoneyCenterX = moneyCenterX - dx;
+        const prevMoneyCenterY = moneyCenterY - dy;
+
+        // Calculate rough collision radius (sum of half-widths/heights)
+        const collisionRadius =
+          (bumperRect.width +
+            bumperRect.height +
+            moneyRect.width +
+            moneyRect.height) /
+          4;
+
+        // Check if line segment from previous to current position passes near bumper center
+        // First check if start or end points are within collision radius
+        const startDist = Math.sqrt(
+          Math.pow(prevMoneyCenterX - bumperCenterX, 2) +
+            Math.pow(prevMoneyCenterY - bumperCenterY, 2)
+        );
+
+        const endDist = Math.sqrt(
+          Math.pow(moneyCenterX - bumperCenterX, 2) +
+            Math.pow(moneyCenterY - bumperCenterY, 2)
+        );
+
+        if (startDist < collisionRadius || endDist < collisionRadius) {
+          collision = true;
+        } else {
+          // Check if line segment passes near bumper center
+          // Calculate closest point on line segment to bumper center
+          const lineLength = Math.sqrt(dx * dx + dy * dy);
+          if (lineLength > 0) {
+            // Normalized direction vector
+            const nx = dx / lineLength;
+            const ny = dy / lineLength;
+
+            // Vector from previous position to bumper center
+            const px = bumperCenterX - prevMoneyCenterX;
+            const py = bumperCenterY - prevMoneyCenterY;
+
+            // Project this vector onto the line direction
+            const projection = px * nx + py * ny;
+
+            // Check if projection falls within line segment
+            if (projection >= 0 && projection <= lineLength) {
+              // Calculate closest point on line
+              const closestX = prevMoneyCenterX + nx * projection;
+              const closestY = prevMoneyCenterY + ny * projection;
+
+              // Check distance from closest point to bumper center
+              const closestDist = Math.sqrt(
+                Math.pow(closestX - bumperCenterX, 2) +
+                  Math.pow(closestY - bumperCenterY, 2)
+              );
+
+              if (closestDist < collisionRadius) {
+                collision = true;
+              }
+            }
+          }
+        }
+      } else {
+        // Standard collision detection for slower objects
+        collision =
+          moneyRect.left < bumperRect.right &&
+          moneyRect.right > bumperRect.left &&
+          moneyRect.top < bumperRect.bottom &&
+          moneyRect.bottom > bumperRect.top;
+      }
+
+      // Process collision if detected
+      if (collision) {
+        collisionDetected = true;
+
         // Apply bumper effect
         applyBumperEffect(bumperEffect);
 
@@ -292,8 +382,11 @@ setInterval(() => {
       }
     });
 
-    // Check boundary collisions
+    // Apply position to DOM element
+    physics.element.style.left = `${(physics.x / gameAreaWidth) * 100}%`;
+    physics.element.style.top = `${physics.y}px`;
 
+    // Check boundary collisions
     // Left and right bounds
     if (physics.x < 0) {
       physics.x = 0;
@@ -310,7 +403,7 @@ setInterval(() => {
     }
 
     // Bottom bound (spikes)
-    if (physics.y > gameAreaHeight - 50) {
+    if (physics.y + physics.height > gameAreaHeight - 30) {
       // Money is destroyed by spikes
       physics.active = false;
       physics.element.remove();
