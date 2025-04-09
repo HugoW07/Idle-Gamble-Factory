@@ -256,90 +256,60 @@ setInterval(() => {
       // Skip if we recently collided with this bumper
       if (physics.collisions.has(bumperEffect)) return;
 
-      // Continuous collision detection for fast-moving objects
-      let collision = false;
+      // Calculate centers and radii for both objects
+      const bumperCenterX = (bumperRect.left + bumperRect.right) / 2;
+      const bumperCenterY = (bumperRect.top + bumperRect.bottom) / 2;
+      const bumperRadius = bumperRect.width / 2; // Assuming bumpers are circular
 
-      if (velocityMagnitude > 5) {
-        // Only use advanced detection for fast-moving objects
-        // Calculate line segment from previous to current position
-        const dx = physics.x - prevX;
-        const dy = physics.y - prevY;
+      const moneyCenterX = (moneyRect.left + moneyRect.right) / 2;
+      const moneyCenterY = (moneyRect.top + moneyRect.bottom) / 2;
+      const moneyRadius = moneyRect.width / 2; // Assuming money signs are roughly circular
 
-        // Calculate bumper center
-        const bumperCenterX = (bumperRect.left + bumperRect.right) / 2;
-        const bumperCenterY = (bumperRect.top + bumperRect.bottom) / 2;
+      // Detect collision between circles
+      const dx = moneyCenterX - bumperCenterX;
+      const dy = moneyCenterY - bumperCenterY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      const combinedRadii = bumperRadius + moneyRadius;
 
-        // Calculate money sign center (using current position)
-        const moneyCenterX = (moneyRect.left + moneyRect.right) / 2;
-        const moneyCenterY = (moneyRect.top + moneyRect.bottom) / 2;
+      let collision = distance <= combinedRadii;
 
-        // Calculate previous money sign center
-        const prevMoneyCenterX = moneyCenterX - dx;
-        const prevMoneyCenterY = moneyCenterY - dy;
+      // For fast-moving objects, also check if the line segment from previous position
+      // to current position intersects with the bumper circle
+      if (!collision && velocityMagnitude > 5) {
+        // Vector from previous to current position
+        const moveX = physics.x - prevX;
+        const moveY = physics.y - prevY;
+        const moveLength = Math.sqrt(moveX * moveX + moveY * moveY);
 
-        // Calculate rough collision radius (sum of half-widths/heights)
-        const collisionRadius =
-          (bumperRect.width +
-            bumperRect.height +
-            moneyRect.width +
-            moneyRect.height) /
-          4;
+        if (moveLength > 0) {
+          // Previous center position
+          const prevCenterX = moneyCenterX - moveX;
+          const prevCenterY = moneyCenterY - moveY;
 
-        // Check if line segment from previous to current position passes near bumper center
-        // First check if start or end points are within collision radius
-        const startDist = Math.sqrt(
-          Math.pow(prevMoneyCenterX - bumperCenterX, 2) +
-            Math.pow(prevMoneyCenterY - bumperCenterY, 2)
-        );
+          // Vector from previous center to bumper center
+          const toPrevX = bumperCenterX - prevCenterX;
+          const toPrevY = bumperCenterY - prevCenterY;
 
-        const endDist = Math.sqrt(
-          Math.pow(moneyCenterX - bumperCenterX, 2) +
-            Math.pow(moneyCenterY - bumperCenterY, 2)
-        );
+          // Project this vector onto movement direction
+          const dot = (toPrevX * moveX + toPrevY * moveY) / moveLength;
 
-        if (startDist < collisionRadius || endDist < collisionRadius) {
-          collision = true;
-        } else {
-          // Check if line segment passes near bumper center
-          // Calculate closest point on line segment to bumper center
-          const lineLength = Math.sqrt(dx * dx + dy * dy);
-          if (lineLength > 0) {
-            // Normalized direction vector
-            const nx = dx / lineLength;
-            const ny = dy / lineLength;
+          // Clamp to get closest point on movement line
+          const closestT = Math.max(0, Math.min(1, dot / moveLength));
 
-            // Vector from previous position to bumper center
-            const px = bumperCenterX - prevMoneyCenterX;
-            const py = bumperCenterY - prevMoneyCenterY;
+          // Closest point coordinates
+          const closestX = prevCenterX + closestT * moveX;
+          const closestY = prevCenterY + closestT * moveY;
 
-            // Project this vector onto the line direction
-            const projection = px * nx + py * ny;
+          // Distance from closest point to bumper center
+          const closestDx = closestX - bumperCenterX;
+          const closestDy = closestY - bumperCenterY;
+          const closestDistance = Math.sqrt(
+            closestDx * closestDx + closestDy * closestDy
+          );
 
-            // Check if projection falls within line segment
-            if (projection >= 0 && projection <= lineLength) {
-              // Calculate closest point on line
-              const closestX = prevMoneyCenterX + nx * projection;
-              const closestY = prevMoneyCenterY + ny * projection;
-
-              // Check distance from closest point to bumper center
-              const closestDist = Math.sqrt(
-                Math.pow(closestX - bumperCenterX, 2) +
-                  Math.pow(closestY - bumperCenterY, 2)
-              );
-
-              if (closestDist < collisionRadius) {
-                collision = true;
-              }
-            }
-          }
+          // Check if this closest point is within the bumper radius
+          collision = closestDistance <= bumperRadius + moneyRadius;
         }
-      } else {
-        // Standard collision detection for slower objects
-        collision =
-          moneyRect.left < bumperRect.right &&
-          moneyRect.right > bumperRect.left &&
-          moneyRect.top < bumperRect.bottom &&
-          moneyRect.bottom > bumperRect.top;
       }
 
       // Process collision if detected
@@ -356,18 +326,9 @@ setInterval(() => {
         }, 100);
 
         // Calculate collision response
-        // Determine which side of the bumper was hit
-        const dx =
-          (moneyRect.left + moneyRect.right) / 2 -
-          (bumperRect.left + bumperRect.right) / 2;
-        const dy =
-          (moneyRect.top + moneyRect.bottom) / 2 -
-          (bumperRect.top + bumperRect.bottom) / 2;
-
         // Normalize to get direction
-        const length = Math.sqrt(dx * dx + dy * dy);
-        const nx = dx / length;
-        const ny = dy / length;
+        const nx = dx / (distance || 1); // Avoid division by zero
+        const ny = dy / (distance || 1);
 
         // Apply bounce direction
         const speed = Math.sqrt(
@@ -514,54 +475,32 @@ function createBumperPlaceholders() {
 }
 
 // Make a bumper element draggable
-function createBumperPlaceholders() {
-  const clickableArea = document.querySelector(".clickable-area");
+function makeBumperDraggable(bumper) {
+  bumper.setAttribute("draggable", true);
 
-  // Create placeholders for each possible bumper position (1-8)
-  for (let i = 1; i <= MAX_GAME_BUMPERS; i++) {
-    const placeholder = document.createElement("div");
-    placeholder.classList.add("bumper-placeholder");
-    placeholder.dataset.position = i;
+  bumper.addEventListener("dragstart", (event) => {
+    draggedBumper = bumper;
+    // Set the drag image and data
+    event.dataTransfer.setData("text/plain", bumper.getAttribute("class"));
+    event.dataTransfer.effectAllowed = "move";
 
-    // Position placeholder based on the corresponding bumper's position
-    const bumper = document.querySelector(`.bumper-${i}`);
-    if (bumper) {
-      // Get the computed style to get exact position
-      const computedStyle = window.getComputedStyle(bumper);
+    // Add dragging class for styling
+    bumper.classList.add("dragging");
 
-      // Store original position information
-      if (computedStyle.top) placeholder.style.top = computedStyle.top;
-      if (computedStyle.left) placeholder.style.left = computedStyle.left;
-      if (computedStyle.bottom) placeholder.style.bottom = computedStyle.bottom;
-      if (computedStyle.right) placeholder.style.right = computedStyle.right;
-
-      // If using CSS class-based positioning via transforms, capture that too
-      if (computedStyle.transform && computedStyle.transform !== "none") {
-        placeholder.style.transform = computedStyle.transform;
-      }
-
-      // Initially hide placeholder since bumper is present
-      placeholder.style.display = "none";
+    // Show the placeholder where this bumper was
+    const position = getBumperPosition(bumper);
+    const placeholder = document.querySelector(
+      `.bumper-placeholder[data-position="${position}"]`
+    );
+    if (placeholder) {
+      placeholder.style.display = "flex";
     }
+  });
 
-    // Make placeholder droppable
-    placeholder.addEventListener("dragover", (event) => {
-      event.preventDefault();
-      placeholder.classList.add("dragover");
-    });
-
-    placeholder.addEventListener("dragleave", () => {
-      placeholder.classList.remove("dragover");
-    });
-
-    placeholder.addEventListener("drop", (event) => {
-      event.preventDefault();
-      placeholder.classList.remove("dragover");
-      handleBumperDrop(placeholder);
-    });
-
-    clickableArea.appendChild(placeholder);
-  }
+  bumper.addEventListener("dragend", () => {
+    bumper.classList.remove("dragging");
+    draggedBumper = null;
+  });
 }
 
 // Get the position number from a bumper's class
@@ -649,17 +588,11 @@ function handleBumperStoreDrop(slot) {
   updateBumperGameEffects();
 }
 
-// Find this function in your home.js file and replace it with this updated version
+// Handle dropping a stored bumper onto a placeholder
 function handleBumperDrop(placeholder) {
   if (!draggedBumper) return;
 
   const position = placeholder.dataset.position;
-
-  // Check if there's already a bumper at this position and remove it
-  const existingBumper = document.querySelector(`.bumper-${position}`);
-  if (existingBumper) {
-    existingBumper.remove();
-  }
 
   // If dropping a stored bumper from upgrade slot
   if (draggedBumper.classList.contains("stored-bumper")) {
@@ -672,13 +605,6 @@ function handleBumperDrop(placeholder) {
     // Set the exact position to match the placeholder
     newBumper.style.top = placeholder.style.top;
     newBumper.style.left = placeholder.style.left;
-
-    // Remove any transform properties that might interfere with positioning
-    newBumper.style.transform = "";
-
-    // Clear any other positioning styles that might have been applied
-    newBumper.style.bottom = "";
-    newBumper.style.right = "";
 
     // Add to game area
     document.querySelector(".clickable-area").appendChild(newBumper);
@@ -709,10 +635,10 @@ function handleBumperDrop(placeholder) {
     draggedBumper.style.top = placeholder.style.top;
     draggedBumper.style.left = placeholder.style.left;
 
-    // Reset any transform or other positioning properties
-    draggedBumper.style.transform = "";
+    // Clear any other positioning properties that might interfere
     draggedBumper.style.bottom = "";
     draggedBumper.style.right = "";
+    draggedBumper.style.transform = "";
 
     // Hide the new placeholder, show the old one
     placeholder.style.display = "none";
@@ -726,69 +652,6 @@ function handleBumperDrop(placeholder) {
 
   // Update game mechanics
   updateBumperGameEffects();
-
-  // Hide all placeholders that have bumpers over them
-  for (let i = 1; i <= MAX_GAME_BUMPERS; i++) {
-    const bumper = document.querySelector(`.bumper-${i}`);
-    if (bumper) {
-      const placeholder = document.querySelector(
-        `.bumper-placeholder[data-position="${i}"]`
-      );
-      if (placeholder) {
-        placeholder.style.display = "none";
-      }
-    }
-  }
-}
-
-function createBumperPlaceholders() {
-  const clickableArea = document.querySelector(".clickable-area");
-
-  // Create placeholders for each possible bumper position (1-8)
-  for (let i = 1; i <= MAX_GAME_BUMPERS; i++) {
-    const placeholder = document.createElement("div");
-    placeholder.classList.add("bumper-placeholder");
-    placeholder.dataset.position = i;
-
-    // Position placeholder based on the corresponding bumper's position
-    const bumper = document.querySelector(`.bumper-${i}`);
-    if (bumper) {
-      // Get the computed style to get exact position
-      const computedStyle = window.getComputedStyle(bumper);
-
-      // Store original position information
-      if (computedStyle.top) placeholder.style.top = computedStyle.top;
-      if (computedStyle.left) placeholder.style.left = computedStyle.left;
-      if (computedStyle.bottom) placeholder.style.bottom = computedStyle.bottom;
-      if (computedStyle.right) placeholder.style.right = computedStyle.right;
-
-      // If using CSS class-based positioning via transforms, capture that too
-      if (computedStyle.transform && computedStyle.transform !== "none") {
-        placeholder.style.transform = computedStyle.transform;
-      }
-
-      // Initially hide placeholder since bumper is present
-      placeholder.style.display = "none";
-    }
-
-    // Make placeholder droppable
-    placeholder.addEventListener("dragover", (event) => {
-      event.preventDefault();
-      placeholder.classList.add("dragover");
-    });
-
-    placeholder.addEventListener("dragleave", () => {
-      placeholder.classList.remove("dragover");
-    });
-
-    placeholder.addEventListener("drop", (event) => {
-      event.preventDefault();
-      placeholder.classList.remove("dragover");
-      handleBumperDrop(placeholder);
-    });
-
-    clickableArea.appendChild(placeholder);
-  }
 }
 
 // Update game mechanics based on number of active bumpers
