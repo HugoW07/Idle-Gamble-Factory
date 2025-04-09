@@ -607,11 +607,14 @@ function handleBumperStoreDrop(slot) {
     draggedBumper = null;
   });
 
+  // Clear the draggedBumper reference since we've handled it
+  draggedBumper = null;
+
   // Update game mechanics
   updateBumperGameEffects();
 }
 
-// Modified function to handle dropping a bumper onto a placeholder
+// Update the handleBumperDrop function to properly clear draggedBumper
 function handleBumperDrop(placeholder) {
   if (!draggedBumper) return;
 
@@ -645,6 +648,9 @@ function handleBumperDrop(placeholder) {
     makeBumperDraggable(newBumper);
 
     activeGameBumpers++;
+
+    // Clear the draggedBumper reference since we've handled it
+    draggedBumper = null;
   }
   // If moving a bumper from another position
   else if (draggedBumper.classList.contains("bumper")) {
@@ -673,6 +679,9 @@ function handleBumperDrop(placeholder) {
     if (originalPlaceholder) {
       originalPlaceholder.style.display = "flex";
     }
+
+    // Clear the draggedBumper reference since we've handled it
+    draggedBumper = null;
   }
 
   // Update game mechanics
