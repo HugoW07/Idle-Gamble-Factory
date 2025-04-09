@@ -17,7 +17,7 @@ app.get("/", (req, res) => {
     baseIncome: { level: 1, nextLevel: 2, value: 50 },
     speed: { level: 100, nextLevel: 105, value: 250 },
     nextLevelCost: 250000,
-    bumper: { level: 1, multipier: 1 }, // Add bumper data here
+    bumper: { level: 1, multiplier: 1 },
   };
   res.render("home", data);
 });

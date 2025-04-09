@@ -40,10 +40,11 @@ let speedValue = 1; // Start at $1
 let speedUpgradeCost = 10; // Initial upgrade cost
 
 // Bumper stats
-let bumperLevel = 1;
 let bumperValue = 1; // Start at $1
 let bumperUpgradeCost = 10; // Initial upgrade cost
-let bumperMultiplier = 1; // Initial bumper multiplier
+// In home.js, update the initialization to use server values:
+let bumperLevel = parseInt("<%= bumper.level %>") || 1;
+let bumperMultiplier = parseFloat("<%= bumper.multiplier %>") || 1;
 
 // New global variables for bumper management
 let activeGameBumpers = 8; // Track how many bumpers are active in the game area
@@ -271,7 +272,8 @@ setInterval(() => {
       const distance = Math.sqrt(dx * dx + dy * dy);
       const combinedRadii = bumperRadius + moneyRadius;
 
-      let collision = distance <= combinedRadii;
+      // Add a small buffer to improve collision detection reliability
+      let collision = distance <= combinedRadii + 2;
 
       // For fast-moving objects, also check if the line segment from previous position
       // to current position intersects with the bumper circle
@@ -428,6 +430,7 @@ function initBumperSystem() {
 // Create placeholder elements for bumper positions
 function createBumperPlaceholders() {
   const clickableArea = document.querySelector(".clickable-area");
+  const gameAreaRect = clickableArea.getBoundingClientRect();
 
   // Create placeholders for each possible bumper position (1-8)
   for (let i = 1; i <= MAX_GAME_BUMPERS; i++) {
@@ -435,20 +438,25 @@ function createBumperPlaceholders() {
     placeholder.classList.add("bumper-placeholder");
     placeholder.dataset.position = i;
 
-    // Position placeholder based on the corresponding bumper's position
+    // Get the original bumper for this position
     const bumper = document.querySelector(`.bumper-${i}`);
     if (bumper) {
-      // Use getBoundingClientRect to get exact position coordinates
-      const bumperRect = bumper.getBoundingClientRect();
-      const clickableAreaRect = clickableArea.getBoundingClientRect();
+      // Store the original CSS positioning properties
+      const computedStyle = window.getComputedStyle(bumper);
 
-      // Calculate relative position within the clickable area
-      const relativeTop = bumperRect.top - clickableAreaRect.top;
-      const relativeLeft = bumperRect.left - clickableAreaRect.left;
+      // Store all position data attributes for precise repositioning
+      placeholder.dataset.top = computedStyle.top;
+      placeholder.dataset.left = computedStyle.left;
+      placeholder.dataset.bottom = computedStyle.bottom;
+      placeholder.dataset.right = computedStyle.right;
+      placeholder.dataset.transform = computedStyle.transform;
 
-      // Apply the exact positioning (using pixels for precision)
-      placeholder.style.top = `${relativeTop}px`;
-      placeholder.style.left = `${relativeLeft}px`;
+      // Apply the exact positioning to match the bumper
+      placeholder.style.top = computedStyle.top;
+      placeholder.style.left = computedStyle.left;
+      placeholder.style.bottom = computedStyle.bottom;
+      placeholder.style.right = computedStyle.right;
+      placeholder.style.transform = computedStyle.transform;
 
       // Initially hide placeholder since bumper is present
       placeholder.style.display = "none";
@@ -474,7 +482,7 @@ function createBumperPlaceholders() {
   }
 }
 
-// Make a bumper element draggable
+// Also update the makeBumperDraggable function to save and restore positions correctly
 function makeBumperDraggable(bumper) {
   bumper.setAttribute("draggable", true);
 
@@ -493,6 +501,21 @@ function makeBumperDraggable(bumper) {
       `.bumper-placeholder[data-position="${position}"]`
     );
     if (placeholder) {
+      // Store the current bumper's exact position before showing placeholder
+      const computedStyle = window.getComputedStyle(bumper);
+      placeholder.dataset.top = computedStyle.top;
+      placeholder.dataset.left = computedStyle.left;
+      placeholder.dataset.bottom = computedStyle.bottom;
+      placeholder.dataset.right = computedStyle.right;
+      placeholder.dataset.transform = computedStyle.transform;
+
+      // Apply the exact positioning
+      placeholder.style.top = computedStyle.top;
+      placeholder.style.left = computedStyle.left;
+      placeholder.style.bottom = computedStyle.bottom;
+      placeholder.style.right = computedStyle.right;
+      placeholder.style.transform = computedStyle.transform;
+
       placeholder.style.display = "flex";
     }
   });
@@ -588,7 +611,7 @@ function handleBumperStoreDrop(slot) {
   updateBumperGameEffects();
 }
 
-// Handle dropping a stored bumper onto a placeholder
+// Modified function to handle dropping a bumper onto a placeholder
 function handleBumperDrop(placeholder) {
   if (!draggedBumper) return;
 
@@ -602,9 +625,12 @@ function handleBumperDrop(placeholder) {
     newBumper.dataset.effect = draggedBumper.dataset.effect;
     newBumper.textContent = draggedBumper.textContent;
 
-    // Set the exact position to match the placeholder
-    newBumper.style.top = placeholder.style.top;
-    newBumper.style.left = placeholder.style.left;
+    // Apply the EXACT position and transform from the placeholder's stored data
+    newBumper.style.top = placeholder.dataset.top || placeholder.style.top;
+    newBumper.style.left = placeholder.dataset.left || placeholder.style.left;
+    newBumper.style.bottom = placeholder.dataset.bottom || "";
+    newBumper.style.right = placeholder.dataset.right || "";
+    newBumper.style.transform = placeholder.dataset.transform || "";
 
     // Add to game area
     document.querySelector(".clickable-area").appendChild(newBumper);
@@ -631,14 +657,13 @@ function handleBumperDrop(placeholder) {
       `bumper-${position}`
     );
 
-    // Update the bumper's position to match placeholder exactly
-    draggedBumper.style.top = placeholder.style.top;
-    draggedBumper.style.left = placeholder.style.left;
-
-    // Clear any other positioning properties that might interfere
-    draggedBumper.style.bottom = "";
-    draggedBumper.style.right = "";
-    draggedBumper.style.transform = "";
+    // Apply the EXACT position and transform from the placeholder's stored data
+    draggedBumper.style.top = placeholder.dataset.top || placeholder.style.top;
+    draggedBumper.style.left =
+      placeholder.dataset.left || placeholder.style.left;
+    draggedBumper.style.bottom = placeholder.dataset.bottom || "";
+    draggedBumper.style.right = placeholder.dataset.right || "";
+    draggedBumper.style.transform = placeholder.dataset.transform || "";
 
     // Hide the new placeholder, show the old one
     placeholder.style.display = "none";
