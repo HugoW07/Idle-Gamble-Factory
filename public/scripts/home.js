@@ -774,3 +774,21 @@ function updateGameState() {
   gameState.bumperUpgradeCost = bumperUpgradeCost;
   gameState.bumperMultiplier = bumperMultiplier;
 }
+
+// Auto-save the game state every 60 seconds
+setInterval(() => {
+  fetch("/save-game", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(gameState),
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("Failed to save game state.");
+      }
+      console.log("Game state saved successfully!");
+    })
+    .catch((error) => {
+      console.error("Error saving game state:", error);
+    });
+}, 60000); // Save every 60 seconds
