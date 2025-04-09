@@ -316,13 +316,13 @@ body {
 
 /* Remove the movement transform and only keep the scale effect */
 .game-area .bumper:hover {
-  transform: scale(1.1);
+  scale:(1.1);
   box-shadow: 0 0 15px rgba(255, 215, 0, 0.7);
 }
 
 .game-area .bumper.dragging {
   opacity: 0.6;
-  transform: scale(0.9);
+  scale:(0.9);
 }
 
 /* Style for bumpers in upgrade slots */

@@ -514,32 +514,54 @@ function createBumperPlaceholders() {
 }
 
 // Make a bumper element draggable
-function makeBumperDraggable(bumper) {
-  bumper.setAttribute("draggable", true);
+function createBumperPlaceholders() {
+  const clickableArea = document.querySelector(".clickable-area");
 
-  bumper.addEventListener("dragstart", (event) => {
-    draggedBumper = bumper;
-    // Set the drag image and data
-    event.dataTransfer.setData("text/plain", bumper.getAttribute("class"));
-    event.dataTransfer.effectAllowed = "move";
+  // Create placeholders for each possible bumper position (1-8)
+  for (let i = 1; i <= MAX_GAME_BUMPERS; i++) {
+    const placeholder = document.createElement("div");
+    placeholder.classList.add("bumper-placeholder");
+    placeholder.dataset.position = i;
 
-    // Add dragging class for styling
-    bumper.classList.add("dragging");
+    // Position placeholder based on the corresponding bumper's position
+    const bumper = document.querySelector(`.bumper-${i}`);
+    if (bumper) {
+      // Get the computed style to get exact position
+      const computedStyle = window.getComputedStyle(bumper);
 
-    // Show the placeholder where this bumper was
-    const position = getBumperPosition(bumper);
-    const placeholder = document.querySelector(
-      `.bumper-placeholder[data-position="${position}"]`
-    );
-    if (placeholder) {
-      placeholder.style.display = "flex";
+      // Store original position information
+      if (computedStyle.top) placeholder.style.top = computedStyle.top;
+      if (computedStyle.left) placeholder.style.left = computedStyle.left;
+      if (computedStyle.bottom) placeholder.style.bottom = computedStyle.bottom;
+      if (computedStyle.right) placeholder.style.right = computedStyle.right;
+
+      // If using CSS class-based positioning via transforms, capture that too
+      if (computedStyle.transform && computedStyle.transform !== "none") {
+        placeholder.style.transform = computedStyle.transform;
+      }
+
+      // Initially hide placeholder since bumper is present
+      placeholder.style.display = "none";
     }
-  });
 
-  bumper.addEventListener("dragend", () => {
-    bumper.classList.remove("dragging");
-    draggedBumper = null;
-  });
+    // Make placeholder droppable
+    placeholder.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      placeholder.classList.add("dragover");
+    });
+
+    placeholder.addEventListener("dragleave", () => {
+      placeholder.classList.remove("dragover");
+    });
+
+    placeholder.addEventListener("drop", (event) => {
+      event.preventDefault();
+      placeholder.classList.remove("dragover");
+      handleBumperDrop(placeholder);
+    });
+
+    clickableArea.appendChild(placeholder);
+  }
 }
 
 // Get the position number from a bumper's class
@@ -627,11 +649,17 @@ function handleBumperStoreDrop(slot) {
   updateBumperGameEffects();
 }
 
-// Handle dropping a stored bumper onto a placeholder
+// Find this function in your home.js file and replace it with this updated version
 function handleBumperDrop(placeholder) {
   if (!draggedBumper) return;
 
   const position = placeholder.dataset.position;
+
+  // Check if there's already a bumper at this position and remove it
+  const existingBumper = document.querySelector(`.bumper-${position}`);
+  if (existingBumper) {
+    existingBumper.remove();
+  }
 
   // If dropping a stored bumper from upgrade slot
   if (draggedBumper.classList.contains("stored-bumper")) {
@@ -644,6 +672,13 @@ function handleBumperDrop(placeholder) {
     // Set the exact position to match the placeholder
     newBumper.style.top = placeholder.style.top;
     newBumper.style.left = placeholder.style.left;
+
+    // Remove any transform properties that might interfere with positioning
+    newBumper.style.transform = "";
+
+    // Clear any other positioning styles that might have been applied
+    newBumper.style.bottom = "";
+    newBumper.style.right = "";
 
     // Add to game area
     document.querySelector(".clickable-area").appendChild(newBumper);
@@ -674,10 +709,10 @@ function handleBumperDrop(placeholder) {
     draggedBumper.style.top = placeholder.style.top;
     draggedBumper.style.left = placeholder.style.left;
 
-    // Clear any other positioning properties that might interfere
+    // Reset any transform or other positioning properties
+    draggedBumper.style.transform = "";
     draggedBumper.style.bottom = "";
     draggedBumper.style.right = "";
-    draggedBumper.style.transform = "";
 
     // Hide the new placeholder, show the old one
     placeholder.style.display = "none";
@@ -691,6 +726,69 @@ function handleBumperDrop(placeholder) {
 
   // Update game mechanics
   updateBumperGameEffects();
+
+  // Hide all placeholders that have bumpers over them
+  for (let i = 1; i <= MAX_GAME_BUMPERS; i++) {
+    const bumper = document.querySelector(`.bumper-${i}`);
+    if (bumper) {
+      const placeholder = document.querySelector(
+        `.bumper-placeholder[data-position="${i}"]`
+      );
+      if (placeholder) {
+        placeholder.style.display = "none";
+      }
+    }
+  }
+}
+
+function createBumperPlaceholders() {
+  const clickableArea = document.querySelector(".clickable-area");
+
+  // Create placeholders for each possible bumper position (1-8)
+  for (let i = 1; i <= MAX_GAME_BUMPERS; i++) {
+    const placeholder = document.createElement("div");
+    placeholder.classList.add("bumper-placeholder");
+    placeholder.dataset.position = i;
+
+    // Position placeholder based on the corresponding bumper's position
+    const bumper = document.querySelector(`.bumper-${i}`);
+    if (bumper) {
+      // Get the computed style to get exact position
+      const computedStyle = window.getComputedStyle(bumper);
+
+      // Store original position information
+      if (computedStyle.top) placeholder.style.top = computedStyle.top;
+      if (computedStyle.left) placeholder.style.left = computedStyle.left;
+      if (computedStyle.bottom) placeholder.style.bottom = computedStyle.bottom;
+      if (computedStyle.right) placeholder.style.right = computedStyle.right;
+
+      // If using CSS class-based positioning via transforms, capture that too
+      if (computedStyle.transform && computedStyle.transform !== "none") {
+        placeholder.style.transform = computedStyle.transform;
+      }
+
+      // Initially hide placeholder since bumper is present
+      placeholder.style.display = "none";
+    }
+
+    // Make placeholder droppable
+    placeholder.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      placeholder.classList.add("dragover");
+    });
+
+    placeholder.addEventListener("dragleave", () => {
+      placeholder.classList.remove("dragover");
+    });
+
+    placeholder.addEventListener("drop", (event) => {
+      event.preventDefault();
+      placeholder.classList.remove("dragover");
+      handleBumperDrop(placeholder);
+    });
+
+    clickableArea.appendChild(placeholder);
+  }
 }
 
 // Update game mechanics based on number of active bumpers
