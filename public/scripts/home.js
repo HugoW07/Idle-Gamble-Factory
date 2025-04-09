@@ -482,7 +482,7 @@ function createBumperPlaceholders() {
   }
 }
 
-// Also update the makeBumperDraggable function to save and restore positions correctly
+// Make a bumper element draggable
 function makeBumperDraggable(bumper) {
   bumper.setAttribute("draggable", true);
 
@@ -520,9 +520,26 @@ function makeBumperDraggable(bumper) {
     }
   });
 
-  bumper.addEventListener("dragend", () => {
+  bumper.addEventListener("dragend", (event) => {
     bumper.classList.remove("dragging");
-    draggedBumper = null;
+
+    // If the drop was not successful (no valid target), return the bumper to its original position
+    // Check if bumper is still in the DOM and draggedBumper is still set
+    if (draggedBumper === bumper) {
+      // Get the position of this bumper
+      const position = getBumperPosition(bumper);
+
+      // Hide the placeholder for this position since the bumper is returning
+      const placeholder = document.querySelector(
+        `.bumper-placeholder[data-position="${position}"]`
+      );
+      if (placeholder) {
+        placeholder.style.display = "none";
+      }
+
+      // Reset draggedBumper since the operation is complete
+      draggedBumper = null;
+    }
   });
 }
 
