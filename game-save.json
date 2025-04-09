@@ -1,0 +1,25 @@
+{
+  "money": 1000,
+  "baseIncome": {
+    "level": 1,
+    "value": 50,
+    "upgradeCost": 10
+  },
+  "speed": {
+    "level": 100,
+    "value": 250,
+    "upgradeCost": 10
+  },
+  "bumper": {
+    "level": 1,
+    "value": 1,
+    "multiplier": 1,
+    "upgradeCost": 10
+  },
+  "income": {
+    "current": 13.8,
+    "perSecond": 0.7
+  },
+  "nextLevelCost": 250000,
+  "activeBumpers": 8
+}

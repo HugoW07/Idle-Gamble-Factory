@@ -58,6 +58,21 @@ const gravity = 0.5;
 const bounceFactor = 0.85;
 const frictionFactor = 0.99;
 
+// Game state object to store important values
+const gameState = {
+  money: money, // Current money
+  baseIncomeLevel: baseIncomeLevel,
+  baseIncomeValue: baseIncomeValue,
+  baseIncomeUpgradeCost: baseIncomeUpgradeCost,
+  speedLevel: speedLevel,
+  speedValue: speedValue,
+  speedUpgradeCost: speedUpgradeCost,
+  bumperLevel: bumperLevel,
+  bumperValue: bumperValue,
+  bumperUpgradeCost: bumperUpgradeCost,
+  bumperMultiplier: bumperMultiplier,
+};
+
 // Function to update the UI
 function updateUI() {
   // Update money display
@@ -87,12 +102,6 @@ function updateUI() {
   });
 }
 
-// Clickable area: Earn money on click
-clickableArea.addEventListener("click", () => {
-  money += baseIncomeValue * bumperMultiplier;
-  updateUI();
-});
-
 // Base Income upgrade logic
 upgradeBaseIncomeButton.addEventListener("click", () => {
   if (money >= baseIncomeUpgradeCost) {
@@ -105,6 +114,7 @@ upgradeBaseIncomeButton.addEventListener("click", () => {
     // Increase the cost for next upgrade
     baseIncomeUpgradeCost = Math.round(baseIncomeUpgradeCost * 1.2);
 
+    updateGameState(); // Update the state
     updateUI();
   } else {
     alert("Not enough money for base income upgrade!");
@@ -718,6 +728,29 @@ function updateBumperGameEffects() {
 
 // Initialize after DOM is fully loaded
 document.addEventListener("DOMContentLoaded", () => {
+  fetch("/load-game")
+    .then((response) => response.json())
+    .then((gameState) => {
+      // Update game variables with the loaded state
+      money = gameState.money;
+      baseIncomeLevel = gameState.baseIncome.level;
+      baseIncomeValue = gameState.baseIncome.value;
+      baseIncomeUpgradeCost = gameState.baseIncome.upgradeCost;
+      speedLevel = gameState.speed.level;
+      speedValue = gameState.speed.value;
+      speedUpgradeCost = gameState.speed.upgradeCost;
+      bumperLevel = gameState.bumper.level;
+      bumperValue = gameState.bumper.value;
+      bumperMultiplier = gameState.bumper.multiplier;
+      bumperUpgradeCost = gameState.bumper.upgradeCost;
+
+      // Update the UI
+      updateUI();
+    })
+    .catch((error) => {
+      console.error("Error loading game state:", error);
+    });
+
   // Set initial values
   updateUI();
 
@@ -727,3 +760,17 @@ document.addEventListener("DOMContentLoaded", () => {
   // Initialize the bumper drag and drop system
   initBumperSystem();
 });
+
+function updateGameState() {
+  gameState.money = money;
+  gameState.baseIncomeLevel = baseIncomeLevel;
+  gameState.baseIncomeValue = baseIncomeValue;
+  gameState.baseIncomeUpgradeCost = baseIncomeUpgradeCost;
+  gameState.speedLevel = speedLevel;
+  gameState.speedValue = speedValue;
+  gameState.speedUpgradeCost = speedUpgradeCost;
+  gameState.bumperLevel = bumperLevel;
+  gameState.bumperValue = bumperValue;
+  gameState.bumperUpgradeCost = bumperUpgradeCost;
+  gameState.bumperMultiplier = bumperMultiplier;
+}
