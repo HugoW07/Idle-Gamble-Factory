@@ -45,6 +45,11 @@ let bumperValue = 1; // Start at $1
 let bumperUpgradeCost = 10; // Initial upgrade cost
 let bumperMultiplier = 1; // Initial bumper multiplier
 
+// New global variables for bumper management
+let activeGameBumpers = 8; // Track how many bumpers are active in the game area
+const MAX_GAME_BUMPERS = 8; // Maximum number of bumpers in the game area
+let draggedBumper = null; // Track which bumper is being dragged
+
 // Physics settings - optimized for 60 FPS
 const FPS = 60;
 const frameTime = 1000 / FPS;
@@ -74,7 +79,8 @@ function updateUI() {
   bumperCostElement.textContent = `Cost: $${bumperUpgradeCost}`;
 
   // Update bumper effect text on the game area
-  bumpers.forEach((bumper) => {
+  const gameBumpers = document.querySelectorAll(".game-area .bumper");
+  gameBumpers.forEach((bumper) => {
     bumper.dataset.effect = `+${bumperValue}`;
     bumper.textContent = `+${bumperValue}`;
   });
@@ -240,7 +246,10 @@ setInterval(() => {
     // Check collision with each bumper - using continuous collision detection for fast objects
     let collisionDetected = false;
 
-    bumpers.forEach((bumper) => {
+    // Query all bumpers that are actually in the game (not stored in slots)
+    const activeBumpers = document.querySelectorAll(".game-area .bumper");
+
+    activeBumpers.forEach((bumper) => {
       const bumperRect = bumper.getBoundingClientRect();
       const bumperEffect = bumper.dataset.effect;
 
@@ -438,6 +447,263 @@ function applyBumperEffect(effect) {
   updateUI();
 }
 
+// -------------------- BUMPER DRAG AND DROP SYSTEM --------------------
+
+// Initialize the bumper system
+function initBumperSystem() {
+  // Make all game area bumpers draggable
+  const gameBumpers = document.querySelectorAll(".game-area .bumper");
+  gameBumpers.forEach((bumper) => {
+    makeBumperDraggable(bumper);
+  });
+
+  // Create empty placeholders for each bumper position
+  createBumperPlaceholders();
+
+  // Make upgrade slots droppable
+  initUpgradeSlots();
+}
+
+// Create placeholder elements for bumper positions
+function createBumperPlaceholders() {
+  const clickableArea = document.querySelector(".clickable-area");
+
+  // Create placeholders for each possible bumper position (1-8)
+  for (let i = 1; i <= MAX_GAME_BUMPERS; i++) {
+    const placeholder = document.createElement("div");
+    placeholder.classList.add("bumper-placeholder");
+    placeholder.dataset.position = i;
+
+    // Position placeholder based on the corresponding bumper's position
+    const bumper = document.querySelector(`.bumper-${i}`);
+    if (bumper) {
+      // Use getBoundingClientRect to get exact position coordinates
+      const bumperRect = bumper.getBoundingClientRect();
+      const clickableAreaRect = clickableArea.getBoundingClientRect();
+
+      // Calculate relative position within the clickable area
+      const relativeTop = bumperRect.top - clickableAreaRect.top;
+      const relativeLeft = bumperRect.left - clickableAreaRect.left;
+
+      // Apply the exact positioning (using pixels for precision)
+      placeholder.style.top = `${relativeTop}px`;
+      placeholder.style.left = `${relativeLeft}px`;
+
+      // Initially hide placeholder since bumper is present
+      placeholder.style.display = "none";
+    }
+
+    // Make placeholder droppable
+    placeholder.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      placeholder.classList.add("dragover");
+    });
+
+    placeholder.addEventListener("dragleave", () => {
+      placeholder.classList.remove("dragover");
+    });
+
+    placeholder.addEventListener("drop", (event) => {
+      event.preventDefault();
+      placeholder.classList.remove("dragover");
+      handleBumperDrop(placeholder);
+    });
+
+    clickableArea.appendChild(placeholder);
+  }
+}
+
+// Make a bumper element draggable
+function makeBumperDraggable(bumper) {
+  bumper.setAttribute("draggable", true);
+
+  bumper.addEventListener("dragstart", (event) => {
+    draggedBumper = bumper;
+    // Set the drag image and data
+    event.dataTransfer.setData("text/plain", bumper.getAttribute("class"));
+    event.dataTransfer.effectAllowed = "move";
+
+    // Add dragging class for styling
+    bumper.classList.add("dragging");
+
+    // Show the placeholder where this bumper was
+    const position = getBumperPosition(bumper);
+    const placeholder = document.querySelector(
+      `.bumper-placeholder[data-position="${position}"]`
+    );
+    if (placeholder) {
+      placeholder.style.display = "flex";
+    }
+  });
+
+  bumper.addEventListener("dragend", () => {
+    bumper.classList.remove("dragging");
+    draggedBumper = null;
+  });
+}
+
+// Get the position number from a bumper's class
+function getBumperPosition(bumper) {
+  const classes = bumper.className.split(" ");
+  for (const cls of classes) {
+    if (cls.startsWith("bumper-")) {
+      return parseInt(cls.replace("bumper-", ""));
+    }
+  }
+  return null;
+}
+
+// Initialize upgrade slots to accept bumpers
+function initUpgradeSlots() {
+  const upgradeSlots = document.querySelectorAll(".upgrade-slot");
+
+  upgradeSlots.forEach((slot) => {
+    // Make each slot a drop target
+    slot.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      slot.classList.add("dragover");
+    });
+
+    slot.addEventListener("dragleave", () => {
+      slot.classList.remove("dragover");
+    });
+
+    slot.addEventListener("drop", (event) => {
+      event.preventDefault();
+      slot.classList.remove("dragover");
+
+      // Handle dropping a bumper on an upgrade slot
+      if (draggedBumper && !slot.hasChildNodes()) {
+        handleBumperStoreDrop(slot);
+      }
+    });
+
+    // Make stored bumpers draggable back to the game area
+    slot.addEventListener("dragstart", (event) => {
+      if (
+        slot.firstChild &&
+        slot.firstChild.classList.contains("stored-bumper")
+      ) {
+        draggedBumper = slot.firstChild;
+        event.dataTransfer.setData("text/plain", "stored-bumper");
+      }
+    });
+  });
+}
+
+// Handle dropping a bumper onto an upgrade slot
+function handleBumperStoreDrop(slot) {
+  if (!draggedBumper) return;
+
+  // Get position for placeholder visibility
+  const position = getBumperPosition(draggedBumper);
+
+  // Create a new stored bumper element
+  const storedBumper = document.createElement("div");
+  storedBumper.classList.add("stored-bumper");
+  storedBumper.setAttribute("draggable", true);
+  storedBumper.dataset.position = position;
+  storedBumper.dataset.effect = draggedBumper.dataset.effect;
+  storedBumper.textContent = draggedBumper.textContent;
+
+  // Add to upgrade slot
+  slot.appendChild(storedBumper);
+
+  // Remove the original bumper from game area
+  draggedBumper.remove();
+  activeGameBumpers--;
+
+  // Make the stored bumper draggable
+  storedBumper.addEventListener("dragstart", (event) => {
+    draggedBumper = storedBumper;
+    event.dataTransfer.setData("text/plain", "stored-bumper");
+  });
+
+  storedBumper.addEventListener("dragend", () => {
+    draggedBumper = null;
+  });
+
+  // Update game mechanics
+  updateBumperGameEffects();
+}
+
+// Handle dropping a stored bumper onto a placeholder
+function handleBumperDrop(placeholder) {
+  if (!draggedBumper) return;
+
+  const position = placeholder.dataset.position;
+
+  // If dropping a stored bumper from upgrade slot
+  if (draggedBumper.classList.contains("stored-bumper")) {
+    // Create a new game bumper
+    const newBumper = document.createElement("div");
+    newBumper.classList.add("bumper", `bumper-${position}`);
+    newBumper.dataset.effect = draggedBumper.dataset.effect;
+    newBumper.textContent = draggedBumper.textContent;
+
+    // Set the exact position to match the placeholder
+    newBumper.style.top = placeholder.style.top;
+    newBumper.style.left = placeholder.style.left;
+
+    // Add to game area
+    document.querySelector(".clickable-area").appendChild(newBumper);
+
+    // Remove from upgrade slot
+    draggedBumper.parentNode.removeChild(draggedBumper);
+
+    // Hide placeholder
+    placeholder.style.display = "none";
+
+    // Make the new bumper draggable
+    makeBumperDraggable(newBumper);
+
+    activeGameBumpers++;
+  }
+  // If moving a bumper from another position
+  else if (draggedBumper.classList.contains("bumper")) {
+    // Get original position
+    const originalPosition = getBumperPosition(draggedBumper);
+
+    // Update the bumper's class to the new position
+    draggedBumper.className = draggedBumper.className.replace(
+      `bumper-${originalPosition}`,
+      `bumper-${position}`
+    );
+
+    // Update the bumper's position to match placeholder exactly
+    draggedBumper.style.top = placeholder.style.top;
+    draggedBumper.style.left = placeholder.style.left;
+
+    // Clear any other positioning properties that might interfere
+    draggedBumper.style.bottom = "";
+    draggedBumper.style.right = "";
+    draggedBumper.style.transform = "";
+
+    // Hide the new placeholder, show the old one
+    placeholder.style.display = "none";
+    const originalPlaceholder = document.querySelector(
+      `.bumper-placeholder[data-position="${originalPosition}"]`
+    );
+    if (originalPlaceholder) {
+      originalPlaceholder.style.display = "flex";
+    }
+  }
+
+  // Update game mechanics
+  updateBumperGameEffects();
+}
+
+// Update game mechanics based on number of active bumpers
+function updateBumperGameEffects() {
+  // Update bumper multiplier based on active bumpers
+  // More bumpers = higher multiplier
+  const baseBumperValue = 0.1;
+  bumperMultiplier = 1 + activeGameBumpers * baseBumperValue;
+
+  // Update UI
+  updateUI();
+}
+
 // Initialize after DOM is fully loaded
 document.addEventListener("DOMContentLoaded", () => {
   // Set initial values
@@ -445,4 +711,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Initialize money spawn interval
   updateMoneySpawnRate();
+
+  // Initialize the bumper drag and drop system
+  initBumperSystem();
 });

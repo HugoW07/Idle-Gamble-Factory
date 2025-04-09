@@ -261,6 +261,129 @@ body {
   right: 20%;
 }
 
+/* Add these styles to home.css */
+
+/* Bumper placeholder styles */
+.bumper-placeholder {
+  position: absolute;
+  width: 75px;
+  height: 75px;
+  border: 3px dashed rgba(255, 215, 0, 0.6);
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 16px;
+  font-weight: bold;
+  color: rgba(255, 255, 255, 0.5);
+  background-color: rgba(50, 0, 100, 0.3);
+  z-index: 1;
+}
+
+.bumper-placeholder::before {
+  content: "+";
+  font-size: 24px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.bumper-placeholder.dragover {
+  background-color: rgba(50, 150, 50, 0.5);
+  border: 3px dashed rgba(255, 255, 255, 0.8);
+}
+
+/* Original bumper style (keep this) */
+.game-area .bumper {
+  position: absolute;
+  width: 75px;
+  height: 75px;
+  background-color: rgba(148, 0, 211, 0.8); /* Purple */
+  border: 5px solid rgba(255, 215, 0, 0.8);
+  color: #ffffff;
+  border-radius: 50%; /* Make the bumpers round */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 16px;
+  font-weight: bold;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8); /* Add shadow for better visibility */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); /* Add a subtle shadow for depth */
+  user-select: none;
+  cursor: grab;
+  /* Add a new transform origin to ensure it scales from the center */
+  transform-origin: center center;
+  transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
+}
+
+/* Remove the movement transform and only keep the scale effect */
+.game-area .bumper:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.7);
+}
+
+.game-area .bumper.dragging {
+  opacity: 0.6;
+  transform: scale(0.9);
+}
+
+/* Style for bumpers in upgrade slots */
+.stored-bumper {
+  width: 50px;
+  height: 50px;
+  background-color: rgba(148, 0, 211, 0.8);
+  border: 3px solid rgba(255, 215, 0, 0.8);
+  color: #ffffff;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 14px;
+  font-weight: bold;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  cursor: grab;
+  user-select: none;
+}
+
+/* Style for upgrade slots with hover effects */
+.upgrade-slot {
+  border: 2px dashed rgba(255, 255, 255, 0.3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: default;
+  transition: background-color 0.3s;
+}
+
+.upgrade-slot:empty {
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+.upgrade-slot:empty:hover {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.upgrade-slot.dragover {
+  background-color: rgba(0, 100, 0, 0.3);
+  border: 2px dashed rgba(255, 255, 255, 0.8);
+}
+
+/* Status indicator when bumpers are removed */
+.bumper-status {
+  position: absolute;
+  top: 50px;
+  right: 10px;
+  background-color: rgba(0, 0, 0, 0.6);
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-size: 14px;
+  color: #ffd700;
+  display: none;
+}
+
+.bumper-status.active {
+  display: block;
+}
+
 /* Money Sign Styles */
 #money-signs {
   position: absolute;
