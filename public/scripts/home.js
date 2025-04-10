@@ -1,4 +1,4 @@
-// Select DOM elements once and cache them
+// Select DOM elements
 const scoreDisplay = document.querySelector(".score-display span");
 const clickableArea = document.querySelector(".clickable-area");
 const moneySignsContainer = document.getElementById("money-signs");
@@ -6,17 +6,21 @@ const bumpers = document.querySelectorAll(".bumper");
 const upgradeBumperButton = document.getElementById("upgrade-bumper");
 
 // Base income elements
-const baseIncomeElement = document.querySelector(".base-income span:nth-child(3)");
-const baseIncomeLevelElement = document.querySelector(".base-income span:nth-child(2)");
+const baseIncomeElement = document.querySelector(
+  ".base-income span:nth-child(3)"
+);
+const baseIncomeLevelElement = document.querySelector(
+  ".base-income span:nth-child(2)"
+);
 const upgradeBaseIncomeButton = document.getElementById("upgrade-base-income");
-const baseIncomeUpgradeCostElement = document.getElementById("base-income-cost");
+const baseIncomeUpgradeCostElement =
+  document.getElementById("base-income-cost");
 
 // Speed elements
 const speedElement = document.querySelector(".speed span:nth-child(3)");
 const speedLevelElement = document.querySelector(".speed span:nth-child(2)");
 const upgradeSpeedButton = document.getElementById("upgrade-speed");
 const speedUpgradeCostElement = document.getElementById("speed-cost");
-const spawnTimeElement = document.querySelector(".spawn-time");
 
 // Bumper elements
 const bumperLevelElement = document.querySelector(".bumper-upgrade .level");
@@ -31,13 +35,14 @@ let baseIncomeValue = 1; // Start at $1
 let baseIncomeUpgradeCost = 10; // Initial upgrade cost
 
 // Speed stats
-let speedLevel = 1; // Start at level 1
-let speedValue = 1; // Start at 1
+let speedLevel = 1;
+let speedValue = 1; // Start at $1
 let speedUpgradeCost = 10; // Initial upgrade cost
 
 // Bumper stats
 let bumperValue = 1; // Start at $1
 let bumperUpgradeCost = 10; // Initial upgrade cost
+// In home.js, update the initialization to use server values:
 let bumperLevel = parseInt("<%= bumper.level %>") || 1;
 let bumperMultiplier = parseFloat("<%= bumper.multiplier %>") || 1;
 
@@ -52,45 +57,6 @@ const frameTime = 1000 / FPS;
 const gravity = 0.5;
 const bounceFactor = 0.85;
 const frictionFactor = 0.99;
-
-// OPTIMIZATION: Pre-calculate game boundaries for physics
-let gameAreaWidth, gameAreaHeight;
-let gameBounds = {
-  left: 0,
-  right: 0,
-  top: 0,
-  bottom: 0
-};
-
-// OPTIMIZATION: Object pool for money signs to reduce garbage collection
-const moneySignPool = {
-  elements: [],
-  maxSize: 30, // Maximum number of money signs in the pool
-  
-  // Get a money sign from the pool or create a new one
-  get: function() {
-    if (this.elements.length > 0) {
-      const element = this.elements.pop();
-      element.style.display = "block";
-      return element;
-    } else {
-      const element = document.createElement("span");
-      element.classList.add("money-sign");
-      return element;
-    }
-  },
-  
-  // Return a money sign to the pool
-  recycle: function(element) {
-    if (this.elements.length < this.maxSize) {
-      element.style.display = "none";
-      this.elements.push(element);
-    } else {
-      // If pool is full, remove the element from DOM
-      element.remove();
-    }
-  }
-};
 
 // Game state object to store important values
 const gameState = {
@@ -107,28 +73,16 @@ const gameState = {
   bumperMultiplier: bumperMultiplier,
 };
 
-// Function to format currency with abbreviations and one decimal point
+// Function to format currency with abbreviations and no decimal points
 function formatCurrency(value) {
   if (value >= 1000000000) {
-    return `$${(value / 1000000000).toFixed(1)}B`; // Billions with one decimal
+    return `$${Math.floor(value / 1000000000)}B`;
   } else if (value >= 1000000) {
-    return `$${(value / 1000000).toFixed(1)}M`; // Millions with one decimal
+    return `$${Math.floor(value / 1000000)}M`;
   } else if (value >= 1000) {
-    return `$${(value / 1000).toFixed(1)}K`; // Thousands with one decimal
+    return `$${Math.floor(value / 1000)}K`;
   } else {
-    return `$${value.toFixed(0)}`; // No decimal for values below 1000
-  }
-}
-
-// OPTIMIZATION: Use requestAnimationFrame for UI updates to prevent layout thrashing
-let uiUpdatePending = false;
-function scheduleUIUpdate() {
-  if (!uiUpdatePending) {
-    uiUpdatePending = true;
-    requestAnimationFrame(() => {
-      updateUI();
-      uiUpdatePending = false;
-    });
+    return `$${Math.floor(value)}`;
   }
 }
 
@@ -139,27 +93,21 @@ function updateUI() {
 
   // Update base income display
   baseIncomeElement.textContent = `$${baseIncomeValue}`;
-  baseIncomeLevelElement.textContent = `${baseIncomeLevel} > ${baseIncomeLevel + 1}`;
+  baseIncomeLevelElement.textContent = `${baseIncomeLevel} > ${
+    baseIncomeLevel + 1
+  }`;
   baseIncomeUpgradeCostElement.textContent = `$${baseIncomeUpgradeCost}`;
 
   // Update speed display
-  const baseSpawnTime = 3000; // Base spawn time in milliseconds (100%)
-  const spawnTimePercentage = 100 + (speedLevel - 1) * 5; // Start at 100% and increase by 5% per level
-  const currentSpawnTime = (baseSpawnTime / (spawnTimePercentage / 100)) / 1000; // Convert to seconds
-  speedElement.textContent = `${spawnTimePercentage}%`; // Show current spawn speed percentage
-  speedLevelElement.textContent = `${spawnTimePercentage}% > ${spawnTimePercentage + 5}%`; // Show progression to the next level
+  speedElement.textContent = `$${speedValue}`;
+  speedLevelElement.textContent = `${speedLevel} > ${speedLevel + 1}`;
   speedUpgradeCostElement.textContent = `$${speedUpgradeCost}`;
-
-  // Display spawn time in seconds
-  if (spawnTimeElement) {
-    spawnTimeElement.textContent = `Spawn Time: ${currentSpawnTime.toFixed(1)}s`;
-  }
 
   // Update bumper display
   bumperLevelElement.textContent = `Level: ${bumperLevel}`;
   bumperCostElement.textContent = `Cost: $${bumperUpgradeCost}`;
 
-  // OPTIMIZATION: Batch update bumper effects
+  // Update bumper effect text on the game area
   const gameBumpers = document.querySelectorAll(".game-area .bumper");
   gameBumpers.forEach((bumper) => {
     bumper.dataset.effect = `+${bumperValue}`;
@@ -172,10 +120,15 @@ upgradeBaseIncomeButton.addEventListener("click", () => {
   if (money >= baseIncomeUpgradeCost) {
     money -= baseIncomeUpgradeCost;
     baseIncomeLevel++;
+
+    // Increase the base income value by 1 each level
     baseIncomeValue += 1;
+
+    // Increase the cost for next upgrade
     baseIncomeUpgradeCost = Math.round(baseIncomeUpgradeCost * 1.2);
-    updateGameState();
-    scheduleUIUpdate();
+
+    updateGameState(); // Update the state
+    updateUI();
   } else {
     alert("Not enough money for base income upgrade!");
   }
@@ -186,10 +139,17 @@ upgradeSpeedButton.addEventListener("click", () => {
   if (money >= speedUpgradeCost) {
     money -= speedUpgradeCost;
     speedLevel++;
+
+    // Increase the speed value by 1 each level
     speedValue += 1;
+
+    // Increase the cost for next upgrade
     speedUpgradeCost = Math.round(speedUpgradeCost * 1.2);
+
+    // Update spawn rate for money signs based on speed
     updateMoneySpawnRate();
-    scheduleUIUpdate();
+
+    updateUI();
   } else {
     alert("Not enough money for speed upgrade!");
   }
@@ -200,61 +160,75 @@ upgradeBumperButton.addEventListener("click", () => {
   if (money >= bumperUpgradeCost) {
     money -= bumperUpgradeCost;
     bumperLevel++;
+
+    // Increase the bumper value by 1 each level
     bumperValue += 1;
+
+    // Increase the bumper multiplier slightly
     bumperMultiplier += 0.1;
+
+    // Increase the cost for next upgrade
     bumperUpgradeCost = Math.round(bumperUpgradeCost * 1.2);
-    scheduleUIUpdate();
+
+    updateUI();
   } else {
     alert("Not enough money for bumper upgrade!");
   }
 });
 
-// OPTIMIZATION: Debounce money spawn to prevent too many spawns
-let moneySpawnInterval;
+// Function to update money spawn rate based on speed
 function updateMoneySpawnRate() {
-  if (moneySpawnInterval) {
-    clearInterval(moneySpawnInterval);
+  // Clear existing interval
+  if (window.moneySpawnInterval) {
+    clearInterval(window.moneySpawnInterval);
   }
 
-  const baseSpawnTime = 3000;
-  const spawnTimePercentage = 100 + (speedLevel - 1) * 5;
-  const spawnTime = Math.round(baseSpawnTime / (spawnTimePercentage / 100));
+  // Calculate spawn rate based on speed (higher speed = faster spawn)
+  const baseSpawnTime = 3000; // 3 seconds base time
+  const spawnTime = Math.max(300, baseSpawnTime - speedValue * 50); // Minimum 0.3 seconds
 
-  // OPTIMIZATION: Limit spawn rate if too many active money signs
-  moneySpawnInterval = setInterval(() => {
-    if (activeMoneyPhysics.length < Math.min(30, 10 + speedLevel)) {
-      const physics = createMoneySign();
-      activeMoneyPhysics.push(physics);
-    }
+  // Create new interval with updated spawn rate
+  window.moneySpawnInterval = setInterval(() => {
+    const physics = createMoneySign();
+    activeMoneyPhysics.push(physics);
   }, spawnTime);
 }
 
-// OPTIMIZATION: Use object pool for money signs
+// Function to create a money sign with improved physics
 function createMoneySign() {
-  // Get money sign from pool or create new one
-  const moneySign = moneySignPool.get();
+  // Use the current base income value for money signs
+  const moneySign = document.createElement("span");
+  moneySign.classList.add("money-sign");
   moneySign.textContent = `$${baseIncomeValue}`;
-  
+
   // Position the money sign in the center with a little randomness (±5%)
   moneySign.style.left = `${50 + (Math.random() * 10 - 5)}%`;
   moneySign.style.transform = "translateX(-50%)";
-  moneySign.style.top = "0";
+  moneySign.style.top = "0"; // Start at the top of the game area
   moneySignsContainer.appendChild(moneySign);
 
   // Create a physics object to track this money sign
   const physics = {
     element: moneySign,
-    x: (parseFloat(moneySign.style.left) / 100) * gameBounds.right,
+    // Convert percentage to absolute position
+    x: (parseFloat(moneySign.style.left) / 100) * clickableArea.offsetWidth,
     y: parseFloat(moneySign.style.top) || 0,
-    vx: (Math.random() * 2 - 1) * 2,
-    vy: 2,
-    width: 24, // OPTIMIZATION: Use fixed sizes instead of getBoundingClientRect
-    height: 24,
-    collisions: new Set(),
+    vx: (Math.random() * 2 - 1) * 2, // Initial x velocity with more variance
+    vy: 2, // Initial y velocity (starts slower)
+    width: 0,
+    height: 0,
+    collisions: new Set(), // Track which bumpers we've collided with recently
     active: true,
-    value: baseIncomeValue,
-    hitCount: 0,
+    value: baseIncomeValue, // Store the current base income value
+    hitCount: 0, // New: Track how many bumpers have been hit
   };
+
+  // Measure the element after it's rendered
+  requestAnimationFrame(() => {
+    const rect = moneySign.getBoundingClientRect();
+    physics.width = rect.width;
+    physics.height = rect.height;
+  });
 
   return physics;
 }
@@ -262,62 +236,11 @@ function createMoneySign() {
 // Array to store all active money signs
 const activeMoneyPhysics = [];
 
-// OPTIMIZATION: Cache bumper positions and sizes for efficient collision detection
-let bumperCache = [];
+// Main game loop running at 60 FPS
+setInterval(() => {
+  const gameAreaWidth = clickableArea.offsetWidth;
+  const gameAreaHeight = clickableArea.offsetHeight;
 
-function updateBumperCache() {
-  bumperCache = [];
-  const activeBumpers = document.querySelectorAll(".game-area .bumper");
-  
-  activeBumpers.forEach((bumper) => {
-    const rect = bumper.getBoundingClientRect();
-    const gameAreaRect = clickableArea.getBoundingClientRect();
-    
-    bumperCache.push({
-      element: bumper,
-      effect: parseFloat(bumper.dataset.effect.replace("+", "")),
-      centerX: rect.left + rect.width/2 - gameAreaRect.left,
-      centerY: rect.top + rect.height/2 - gameAreaRect.top,
-      radius: rect.width/2
-    });
-  });
-}
-
-// OPTIMIZATION: Use requestAnimationFrame for game loop instead of setInterval
-let lastFrameTime = 0;
-let fps = 0;
-let frameCount = 0;
-let lastFpsUpdateTime = 0;
-
-function gameLoop(timestamp) {
-  // Calculate delta time and FPS
-  if (!lastFrameTime) lastFrameTime = timestamp;
-  const deltaTime = timestamp - lastFrameTime;
-  lastFrameTime = timestamp;
-  
-  // Update FPS counter
-  frameCount++;
-  if (timestamp - lastFpsUpdateTime > 1000) {
-    fps = Math.round(frameCount * 1000 / (timestamp - lastFpsUpdateTime));
-    frameCount = 0;
-    lastFpsUpdateTime = timestamp;
-  }
-
-  // Only update physics if enough time has passed (throttling for low-end devices)
-  if (deltaTime < 100) { // Skip if lag spike over 100ms
-    // Update money signs physics
-    updatePhysics(deltaTime);
-  }
-  
-  // Continue the loop
-  requestAnimationFrame(gameLoop);
-}
-
-// OPTIMIZATION: Optimized physics update function
-function updatePhysics(deltaTime) {
-  // Normalize time step to ensure consistent physics regardless of frame rate
-  const timeStep = deltaTime / (1000/60); // Normalize to 60fps timing
-  
   // Update each money sign with improved physics
   for (let i = activeMoneyPhysics.length - 1; i >= 0; i--) {
     const physics = activeMoneyPhysics[i];
@@ -327,37 +250,51 @@ function updatePhysics(deltaTime) {
     const prevX = physics.x;
     const prevY = physics.y;
 
-    // Apply gravity scaled by time step
-    physics.vy += gravity * timeStep;
+    // Apply gravity
+    physics.vy += gravity;
 
-    // Apply friction scaled by time step
-    physics.vx *= Math.pow(frictionFactor, timeStep);
+    // Apply friction
+    physics.vx *= frictionFactor;
 
-    // Update position scaled by time step
-    physics.x += physics.vx * timeStep;
-    physics.y += physics.vy * timeStep;
+    // Update position
+    physics.x += physics.vx;
+    physics.y += physics.vy;
+
+    // Get element rect for collision detection
+    const moneyRect = physics.element.getBoundingClientRect();
 
     // Calculate velocity magnitude - used to identify fast-moving objects
-    const velocityMagnitude = Math.sqrt(physics.vx * physics.vx + physics.vy * physics.vy);
+    const velocityMagnitude = Math.sqrt(
+      physics.vx * physics.vx + physics.vy * physics.vy
+    );
 
     // Check collision with each bumper - using continuous collision detection for fast objects
     let collisionDetected = false;
 
-    // OPTIMIZATION: Use cached bumper data
-    for (const bumper of bumperCache) {
-      // Skip if we recently collided with this bumper
-      if (physics.collisions.has(bumper.element)) continue;
+    // Query all bumpers that are actually in the game (not stored in slots)
+    const activeBumpers = document.querySelectorAll(".game-area .bumper");
 
-      // Calculate centers for money sign
-      const moneyCenterX = physics.x + physics.width/2;
-      const moneyCenterY = physics.y + physics.height/2;
-      const moneyRadius = physics.width/2;
+    activeBumpers.forEach((bumper) => {
+      const bumperRect = bumper.getBoundingClientRect();
+      const bumperEffect = bumper.dataset.effect;
+
+      // Skip if we recently collided with this bumper
+      if (physics.collisions.has(bumperEffect)) return;
+
+      // Calculate centers and radii for both objects
+      const bumperCenterX = (bumperRect.left + bumperRect.right) / 2;
+      const bumperCenterY = (bumperRect.top + bumperRect.bottom) / 2;
+      const bumperRadius = bumperRect.width / 2; // Assuming bumpers are circular
+
+      const moneyCenterX = (moneyRect.left + moneyRect.right) / 2;
+      const moneyCenterY = (moneyRect.top + moneyRect.bottom) / 2;
+      const moneyRadius = moneyRect.width / 2; // Assuming money signs are roughly circular
 
       // Detect collision between circles
-      const dx = moneyCenterX - bumper.centerX;
-      const dy = moneyCenterY - bumper.centerY;
+      const dx = moneyCenterX - bumperCenterX;
+      const dy = moneyCenterY - bumperCenterY;
       const distance = Math.sqrt(dx * dx + dy * dy);
-      const combinedRadii = bumper.radius + moneyRadius;
+      const combinedRadii = bumperRadius + moneyRadius;
 
       // Add a small buffer to improve collision detection reliability
       let collision = distance <= combinedRadii + 2;
@@ -376,8 +313,8 @@ function updatePhysics(deltaTime) {
           const prevCenterY = moneyCenterY - moveY;
 
           // Vector from previous center to bumper center
-          const toPrevX = bumper.centerX - prevCenterX;
-          const toPrevY = bumper.centerY - prevCenterY;
+          const toPrevX = bumperCenterX - prevCenterX;
+          const toPrevY = bumperCenterY - prevCenterY;
 
           // Project this vector onto movement direction
           const dot = (toPrevX * moveX + toPrevY * moveY) / moveLength;
@@ -390,12 +327,14 @@ function updatePhysics(deltaTime) {
           const closestY = prevCenterY + closestT * moveY;
 
           // Distance from closest point to bumper center
-          const closestDx = closestX - bumper.centerX;
-          const closestDy = closestY - bumper.centerY;
-          const closestDistance = Math.sqrt(closestDx * closestDx + closestDy * closestDy);
+          const closestDx = closestX - bumperCenterX;
+          const closestDy = closestY - bumperCenterY;
+          const closestDistance = Math.sqrt(
+            closestDx * closestDx + closestDy * closestDy
+          );
 
           // Check if this closest point is within the bumper radius
-          collision = closestDistance <= bumper.radius + moneyRadius;
+          collision = closestDistance <= bumperRadius + moneyRadius;
         }
       }
 
@@ -403,23 +342,23 @@ function updatePhysics(deltaTime) {
       if (collision) {
         collisionDetected = true;
 
-        // Apply bumper effect to money sign value
-        physics.value += bumper.effect;
+        // MODIFIED: Apply bumper effect to money sign value instead of directly to money
+        // Extract numeric value from bumper effect
+        const effectValue = parseFloat(bumperEffect.replace("+", ""));
+        physics.value += effectValue;
         physics.hitCount++;
 
         // Update the money sign display with new value
         physics.element.textContent = formatCurrency(physics.value);
 
-        // Change the color based on value - OPTIMIZATION: Use fewer color changes
-        if (physics.hitCount % 2 === 0) {
-          const intensity = Math.min(255, Math.floor(50 + physics.hitCount * 15));
-          physics.element.style.color = `rgb(${intensity}, 255, ${intensity})`;
-        }
+        // Change the color based on value
+        const intensity = Math.min(255, Math.floor(50 + physics.hitCount * 15));
+        physics.element.style.color = `rgb(${intensity}, 255, ${intensity})`;
 
-        // OPTIMIZATION: Use a CSS class for flash effect instead of direct style changes
-        bumper.element.classList.add('bumper-flash');
+        // Add visual feedback - flash the bumper
+        bumper.style.backgroundColor = "rgba(255, 255, 0, 0.8)"; // Flash yellow
         setTimeout(() => {
-          bumper.element.classList.remove('bumper-flash');
+          bumper.style.backgroundColor = "rgba(148, 0, 211, 0.8)"; // Back to purple
         }, 100);
 
         // Calculate collision response
@@ -428,7 +367,9 @@ function updatePhysics(deltaTime) {
         const ny = dy / (distance || 1);
 
         // Apply bounce direction
-        const speed = Math.sqrt(physics.vx * physics.vx + physics.vy * physics.vy);
+        const speed = Math.sqrt(
+          physics.vx * physics.vx + physics.vy * physics.vy
+        );
         physics.vx = nx * speed * bounceFactor * 1.2; // Boost bounce speed
         physics.vy = ny * speed * bounceFactor * 1.2;
 
@@ -440,24 +381,24 @@ function updatePhysics(deltaTime) {
         }
 
         // Prevent multiple collisions with the same bumper
-        physics.collisions.add(bumper.element);
+        physics.collisions.add(bumperEffect);
         setTimeout(() => {
-          physics.collisions.delete(bumper.element);
+          physics.collisions.delete(bumperEffect);
         }, 500);
       }
-    }
+    });
 
-    // OPTIMIZATION: Use CSS transform for position updates instead of left/top
-    // This avoids layout thrashing by using the GPU for positioning
-    physics.element.style.transform = `translate(${(physics.x / gameBounds.right) * 100}%, ${physics.y}px)`;
+    // Apply position to DOM element
+    physics.element.style.left = `${(physics.x / gameAreaWidth) * 100}%`;
+    physics.element.style.top = `${physics.y}px`;
 
     // Check boundary collisions
     // Left and right bounds
     if (physics.x < 0) {
       physics.x = 0;
       physics.vx = Math.abs(physics.vx) * bounceFactor;
-    } else if (physics.x + physics.width > gameBounds.right) {
-      physics.x = gameBounds.right - physics.width;
+    } else if (physics.x + physics.width > gameAreaWidth) {
+      physics.x = gameAreaWidth - physics.width;
       physics.vx = -Math.abs(physics.vx) * bounceFactor;
     }
 
@@ -468,70 +409,51 @@ function updatePhysics(deltaTime) {
     }
 
     // Bottom bound (spikes)
-    if (physics.y + physics.height > gameBounds.bottom - 30) {
-      // Add value to money count
+    if (physics.y + physics.height > gameAreaHeight - 30) {
+      // MODIFIED: Instead of destroying money sign, add its value to money count
       money += physics.value;
-      scheduleUIUpdate();
+      updateUI();
 
-      // OPTIMIZATION: Use object pooling for floating text
-      showEarnText(physics.x, gameBounds.bottom - 40, physics.value);
+      // Show a floating text with the earned amount
+      const earnText = document.createElement("span");
+      earnText.textContent = `+${formatCurrency(physics.value)}`;
+      earnText.style.position = "absolute";
+      earnText.style.left = `${(physics.x / gameAreaWidth) * 100}%`;
+      earnText.style.top = `${gameAreaHeight - 40}px`;
+      earnText.style.color = "#00ff00";
+      earnText.style.fontSize = "18px";
+      earnText.style.fontWeight = "bold";
+      earnText.style.zIndex = "100";
+      clickableArea.appendChild(earnText);
 
-      // Recycle the money sign
+      // Animate the earned text
+      let opacity = 1;
+      const animateEarnText = () => {
+        opacity -= 0.05;
+        earnText.style.opacity = opacity;
+        earnText.style.top = `${parseFloat(earnText.style.top) - 1}px`;
+
+        if (opacity > 0) {
+          requestAnimationFrame(animateEarnText);
+        } else {
+          earnText.remove();
+        }
+      };
+
+      requestAnimationFrame(animateEarnText);
+
+      // Now remove the money sign
       physics.active = false;
-      moneySignPool.recycle(physics.element);
+      physics.element.remove();
       activeMoneyPhysics.splice(i, 1);
     }
   }
-}
+}, frameTime); // Run at ~60 FPS
 
-// OPTIMIZATION: Efficient earn text display
-const earnTextPool = [];
-function showEarnText(x, y, value) {
-  // Get or create earn text element
-  let earnText;
-  if (earnTextPool.length > 0) {
-    earnText = earnTextPool.pop();
-    earnText.style.display = "block";
-  } else {
-    earnText = document.createElement("span");
-    earnText.style.position = "absolute";
-    earnText.style.color = "#00ff00";
-    earnText.style.fontSize = "18px";
-    earnText.style.fontWeight = "bold";
-    earnText.style.zIndex = "100";
-  }
-  
-  earnText.textContent = `+${formatCurrency(value)}`;
-  earnText.style.left = `${(x / gameBounds.right) * 100}%`;
-  earnText.style.top = `${y}px`;
-  earnText.style.opacity = "1";
-  clickableArea.appendChild(earnText);
+// Apply bumper effects - REMOVED: This function is no longer needed since bumpers modify money sign value instead
+// function applyBumperEffect() { ... }
 
-  // Animate with requestAnimationFrame for better performance
-  let opacity = 1;
-  let posY = y;
-  let startTime = performance.now();
-  
-  function animateEarnText(timestamp) {
-    const elapsed = timestamp - startTime;
-    if (elapsed > 1000) {
-      // Animation complete, recycle element
-      earnText.style.display = "none";
-      earnTextPool.push(earnText);
-      return;
-    }
-    
-    opacity = 1 - (elapsed / 1000);
-    posY -= 1;
-    
-    earnText.style.opacity = opacity;
-    earnText.style.top = `${posY}px`;
-    
-    requestAnimationFrame(animateEarnText);
-  }
-  
-  requestAnimationFrame(animateEarnText);
-}
+// -------------------- BUMPER DRAG AND DROP SYSTEM --------------------
 
 // Initialize the bumper system
 function initBumperSystem() {
@@ -546,18 +468,14 @@ function initBumperSystem() {
 
   // Make upgrade slots droppable
   initUpgradeSlots();
-  
-  // OPTIMIZATION: Cache bumper positions for collision detection
-  updateBumperCache();
 }
 
 // Create placeholder elements for bumper positions
 function createBumperPlaceholders() {
   const clickableArea = document.querySelector(".clickable-area");
-  
-  // OPTIMIZATION: Create placeholders in a document fragment to avoid layout thrashing
-  const fragment = document.createDocumentFragment();
-  
+  const gameAreaRect = clickableArea.getBoundingClientRect();
+
+  // Create placeholders for each possible bumper position (1-8)
   for (let i = 1; i <= MAX_GAME_BUMPERS; i++) {
     const placeholder = document.createElement("div");
     placeholder.classList.add("bumper-placeholder");
@@ -587,7 +505,7 @@ function createBumperPlaceholders() {
       placeholder.style.display = "none";
     }
 
-    // OPTIMIZATION: Use event delegation for drag-and-drop events
+    // Make placeholder droppable
     placeholder.addEventListener("dragover", (event) => {
       event.preventDefault();
       placeholder.classList.add("dragover");
@@ -603,10 +521,8 @@ function createBumperPlaceholders() {
       handleBumperDrop(placeholder);
     });
 
-    fragment.appendChild(placeholder);
+    clickableArea.appendChild(placeholder);
   }
-  
-  clickableArea.appendChild(fragment);
 }
 
 // Make a bumper element draggable
@@ -624,7 +540,9 @@ function makeBumperDraggable(bumper) {
 
     // Show the placeholder where this bumper was
     const position = getBumperPosition(bumper);
-    const placeholder = document.querySelector(`.bumper-placeholder[data-position="${position}"]`);
+    const placeholder = document.querySelector(
+      `.bumper-placeholder[data-position="${position}"]`
+    );
     if (placeholder) {
       // Store the current bumper's exact position before showing placeholder
       const computedStyle = window.getComputedStyle(bumper);
@@ -655,7 +573,9 @@ function makeBumperDraggable(bumper) {
       const position = getBumperPosition(bumper);
 
       // Hide the placeholder for this position since the bumper is returning
-      const placeholder = document.querySelector(`.bumper-placeholder[data-position="${position}"]`);
+      const placeholder = document.querySelector(
+        `.bumper-placeholder[data-position="${position}"]`
+      );
       if (placeholder) {
         placeholder.style.display = "none";
       }
@@ -681,69 +601,38 @@ function getBumperPosition(bumper) {
 function initUpgradeSlots() {
   const upgradeSlots = document.querySelectorAll(".upgrade-slot");
 
-  // OPTIMIZATION: Use event delegation for upgrade slots
-  const upgradesContainer = document.querySelector(".upgrades");
-  if (upgradesContainer) {
-    upgradesContainer.addEventListener("dragover", (event) => {
-      if (event.target.classList.contains("upgrade-slot")) {
-        event.preventDefault();
-        event.target.classList.add("dragover");
+  upgradeSlots.forEach((slot) => {
+    // Make each slot a drop target
+    slot.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      slot.classList.add("dragover");
+    });
+
+    slot.addEventListener("dragleave", () => {
+      slot.classList.remove("dragover");
+    });
+
+    slot.addEventListener("drop", (event) => {
+      event.preventDefault();
+      slot.classList.remove("dragover");
+
+      // Handle dropping a bumper on an upgrade slot
+      if (draggedBumper && !slot.hasChildNodes()) {
+        handleBumperStoreDrop(slot);
       }
     });
-    
-    upgradesContainer.addEventListener("dragleave", (event) => {
-      if (event.target.classList.contains("upgrade-slot")) {
-        event.target.classList.remove("dragover");
-      }
-    });
-    
-    upgradesContainer.addEventListener("drop", (event) => {
-      if (event.target.classList.contains("upgrade-slot")) {
-        event.preventDefault();
-        event.target.classList.remove("dragover");
-        
-        // Handle dropping a bumper on an upgrade slot
-        if (draggedBumper && !event.target.hasChildNodes()) {
-          handleBumperStoreDrop(event.target);
-        }
-      }
-    });
-    
-    upgradesContainer.addEventListener("dragstart", (event) => {
-      if (event.target.classList.contains("stored-bumper")) {
-        draggedBumper = event.target;
+
+    // Make stored bumpers draggable back to the game area
+    slot.addEventListener("dragstart", (event) => {
+      if (
+        slot.firstChild &&
+        slot.firstChild.classList.contains("stored-bumper")
+      ) {
+        draggedBumper = slot.firstChild;
         event.dataTransfer.setData("text/plain", "stored-bumper");
       }
     });
-  } else {
-    // Fallback to individual event listeners if container not found
-    upgradeSlots.forEach((slot) => {
-      slot.addEventListener("dragover", (event) => {
-        event.preventDefault();
-        slot.classList.add("dragover");
-      });
-
-      slot.addEventListener("dragleave", () => {
-        slot.classList.remove("dragover");
-      });
-
-      slot.addEventListener("drop", (event) => {
-        event.preventDefault();
-        slot.classList.remove("dragover");
-
-        if (draggedBumper && !slot.hasChildNodes()) {
-          handleBumperStoreDrop(slot);
-        }
-      });
-
-      slot.addEventListener("dragstart", (event) => {
-        if (slot.firstChild && slot.firstChild.classList.contains("stored-bumper")) {
-          draggedBumper = slot.firstChild;
-          event.dataTransfer.setData("text/plain", "stored-bumper");
-        }
-      });
-    });
-  }
+  });
 }
 
 // Handle dropping a bumper onto an upgrade slot
@@ -783,9 +672,6 @@ function handleBumperStoreDrop(slot) {
 
   // Update game mechanics
   updateBumperGameEffects();
-  
-  // OPTIMIZATION: Update bumper cache when bumpers change
-  updateBumperCache();
 }
 
 // Update the handleBumperDrop function to properly clear draggedBumper
@@ -794,4 +680,170 @@ function handleBumperDrop(placeholder) {
 
   const position = placeholder.dataset.position;
 
-  // If
+  // If dropping a stored bumper from upgrade slot
+  if (draggedBumper.classList.contains("stored-bumper")) {
+    // Create a new game bumper
+    const newBumper = document.createElement("div");
+    newBumper.classList.add("bumper", `bumper-${position}`);
+    newBumper.dataset.effect = draggedBumper.dataset.effect;
+    newBumper.textContent = draggedBumper.textContent;
+
+    // Apply the EXACT position and transform from the placeholder's stored data
+    newBumper.style.top = placeholder.dataset.top || placeholder.style.top;
+    newBumper.style.left = placeholder.dataset.left || placeholder.style.left;
+    newBumper.style.bottom = placeholder.dataset.bottom || "";
+    newBumper.style.right = placeholder.dataset.right || "";
+    newBumper.style.transform = placeholder.dataset.transform || "";
+
+    // Add to game area
+    document.querySelector(".clickable-area").appendChild(newBumper);
+
+    // Remove from upgrade slot
+    draggedBumper.parentNode.removeChild(draggedBumper);
+
+    // Hide placeholder
+    placeholder.style.display = "none";
+
+    // Make the new bumper draggable
+    makeBumperDraggable(newBumper);
+
+    activeGameBumpers++;
+
+    // Clear the draggedBumper reference since we've handled it
+    draggedBumper = null;
+  }
+  // If moving a bumper from another position
+  else if (draggedBumper.classList.contains("bumper")) {
+    // Get original position
+    const originalPosition = getBumperPosition(draggedBumper);
+
+    // Update the bumper's class to the new position
+    draggedBumper.className = draggedBumper.className.replace(
+      `bumper-${originalPosition}`,
+      `bumper-${position}`
+    );
+
+    // Apply the EXACT position and transform from the placeholder's stored data
+    draggedBumper.style.top = placeholder.dataset.top || placeholder.style.top;
+    draggedBumper.style.left =
+      placeholder.dataset.left || placeholder.style.left;
+    draggedBumper.style.bottom = placeholder.dataset.bottom || "";
+    draggedBumper.style.right = placeholder.dataset.right || "";
+    draggedBumper.style.transform = placeholder.dataset.transform || "";
+
+    // Hide the new placeholder, show the old one
+    placeholder.style.display = "none";
+    const originalPlaceholder = document.querySelector(
+      `.bumper-placeholder[data-position="${originalPosition}"]`
+    );
+    if (originalPlaceholder) {
+      originalPlaceholder.style.display = "flex";
+    }
+
+    // Clear the draggedBumper reference since we've handled it
+    draggedBumper = null;
+  }
+
+  // Update game mechanics
+  updateBumperGameEffects();
+}
+
+// Update game mechanics based on number of active bumpers
+function updateBumperGameEffects() {
+  // Update bumper multiplier based on active bumpers
+  // More bumpers = higher multiplier
+  const baseBumperValue = 0.1;
+  bumperMultiplier = 1 + activeGameBumpers * baseBumperValue;
+
+  // Update UI
+  updateUI();
+}
+
+// Initialize after DOM is fully loaded
+document.addEventListener("DOMContentLoaded", () => {
+  fetch("/load-game")
+    .then((response) => response.json())
+    .then((gameState) => {
+      // Update game variables with the loaded state
+      money = gameState.money;
+      baseIncomeLevel = gameState.baseIncome.level;
+      baseIncomeValue = gameState.baseIncome.value;
+      baseIncomeUpgradeCost = gameState.baseIncome.upgradeCost;
+      speedLevel = gameState.speed.level;
+      speedValue = gameState.speed.value;
+      speedUpgradeCost = gameState.speed.upgradeCost;
+      bumperLevel = gameState.bumper.level;
+      bumperValue = gameState.bumper.value;
+      bumperMultiplier = gameState.bumper.multiplier;
+      bumperUpgradeCost = gameState.bumper.upgradeCost;
+
+      // Update the UI
+      updateUI();
+    })
+    .catch((error) => {
+      console.error("Error loading game state:", error);
+    });
+
+  // Set initial values
+  updateUI();
+
+  // Initialize money spawn interval
+  updateMoneySpawnRate();
+
+  // Initialize the bumper drag and drop system
+  initBumperSystem();
+});
+
+function updateGameState() {
+  gameState.money = money;
+  gameState.baseIncomeLevel = baseIncomeLevel;
+  gameState.baseIncomeValue = baseIncomeValue;
+  gameState.baseIncomeUpgradeCost = baseIncomeUpgradeCost;
+  gameState.speedLevel = speedLevel;
+  gameState.speedValue = speedValue;
+  gameState.speedUpgradeCost = speedUpgradeCost;
+  gameState.bumperLevel = bumperLevel;
+  gameState.bumperValue = bumperValue;
+  gameState.bumperUpgradeCost = bumperUpgradeCost;
+  gameState.bumperMultiplier = bumperMultiplier;
+}
+
+// Auto-save game state every 30 seconds
+setInterval(() => {
+  updateGameState();
+
+  // Send game state to server
+  fetch("/save-game", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      money: money,
+      baseIncome: {
+        level: baseIncomeLevel,
+        value: baseIncomeValue,
+        upgradeCost: baseIncomeUpgradeCost,
+      },
+      speed: {
+        level: speedLevel,
+        value: speedValue,
+        upgradeCost: speedUpgradeCost,
+      },
+      bumper: {
+        level: bumperLevel,
+        value: bumperValue,
+        multiplier: bumperMultiplier,
+        upgradeCost: bumperUpgradeCost,
+      },
+    }),
+  })
+    .then((response) => {
+      if (response.ok) {
+        console.log("Game saved successfully");
+      }
+    })
+    .catch((error) => {
+      console.error("Error saving game:", error);
+    });
+}, 30000); // Save every 30 seconds
