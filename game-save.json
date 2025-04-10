@@ -1,9 +1,9 @@
 {
-  "money": 2418,
+  "money": 46,
   "baseIncome": {
-    "level": 2,
-    "value": 2,
-    "upgradeCost": 12
+    "level": 1,
+    "value": 1,
+    "upgradeCost": 10
   },
   "speed": {
     "level": 1,
@@ -11,9 +11,9 @@
     "upgradeCost": 10
   },
   "bumper": {
-    "level": 3,
-    "value": 3,
-    "multiplier": 1.8,
-    "upgradeCost": 14
+    "level": 1,
+    "value": 1,
+    "multiplier": 1.1,
+    "upgradeCost": 12
   }
 }

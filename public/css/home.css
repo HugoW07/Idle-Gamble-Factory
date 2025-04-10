@@ -457,6 +457,31 @@ body {
   z-index: 5;
 }
 
+.reset-game {
+  margin-top: 20px;
+  text-align: center;
+}
+
+#reset-game {
+  background-color: rgba(255, 0, 0, 0.8); /* Red button */
+  color: #ffffff;
+  border: none;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+#reset-game:hover {
+  background-color: rgba(200, 0, 0, 0.8); /* Slightly darker red on hover */
+  transform: scale(1.05);
+}
+
+#reset-game:active {
+  transform: scale(0.95);
+}
+
 @media screen and (min-width: 1601px) {
   .game-container {
     gap: 30px;

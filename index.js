@@ -52,6 +52,43 @@ app.get("/load-game", (req, res) => {
   });
 });
 
+// Reset game state to default values
+app.post("/reset-game", (req, res) => {
+  const defaultGameState = {
+    money: 10, // Start with enough money to buy one bumper
+    baseIncome: {
+      level: 1,
+      value: 1,
+      upgradeCost: 10,
+    },
+    speed: {
+      level: 1,
+      value: 1,
+      upgradeCost: 10,
+    },
+    bumper: {
+      level: 0,
+      value: 0,
+      multiplier: 1,
+      upgradeCost: 10,
+    },
+  };
+
+  fs.writeFile(
+    "game-save.json",
+    JSON.stringify(defaultGameState, null, 2),
+    (err) => {
+      if (err) {
+        console.error("Error resetting game state:", err);
+        res.status(500).send("Failed to reset game state.");
+      } else {
+        console.log("Game state reset successfully!");
+        res.status(200).send("Game state reset!");
+      }
+    }
+  );
+});
+
 app.listen(3000, () => {
   console.log("Server is running on http://localhost:3000");
 });
