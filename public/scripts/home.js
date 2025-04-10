@@ -798,4 +798,42 @@ function updateGameState() {
   gameState.bumperMultiplier = bumperMultiplier;
 }
 
-// Auto-
+// Auto-save game state every 30 seconds
+setInterval(() => {
+  updateGameState();
+
+  // Send game state to server
+  fetch("/save-game", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      money: money,
+      baseIncome: {
+        level: baseIncomeLevel,
+        value: baseIncomeValue,
+        upgradeCost: baseIncomeUpgradeCost,
+      },
+      speed: {
+        level: speedLevel,
+        value: speedValue,
+        upgradeCost: speedUpgradeCost,
+      },
+      bumper: {
+        level: bumperLevel,
+        value: bumperValue,
+        multiplier: bumperMultiplier,
+        upgradeCost: bumperUpgradeCost,
+      },
+    }),
+  })
+    .then((response) => {
+      if (response.ok) {
+        console.log("Game saved successfully");
+      }
+    })
+    .catch((error) => {
+      console.error("Error saving game:", error);
+    });
+}, 30000); // Save every 30 seconds

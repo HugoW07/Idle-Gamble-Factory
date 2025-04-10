@@ -1,13 +1,19 @@
 {
-  "money": 0,
-  "baseIncomeLevel": 1,
-  "baseIncomeValue": 1,
-  "baseIncomeUpgradeCost": 10,
-  "speedLevel": 1,
-  "speedValue": 1,
-  "speedUpgradeCost": 10,
-  "bumperLevel": 1,
-  "bumperValue": 1,
-  "bumperUpgradeCost": 10,
-  "bumperMultiplier": 1
+  "money": 2082,
+  "baseIncome": {
+    "level": 18,
+    "value": 18,
+    "upgradeCost": 215
+  },
+  "speed": {
+    "level": 1,
+    "value": 1,
+    "upgradeCost": 10
+  },
+  "bumper": {
+    "level": 26,
+    "value": 26,
+    "multiplier": 3.500000000000002,
+    "upgradeCost": 924
+  }
 }
