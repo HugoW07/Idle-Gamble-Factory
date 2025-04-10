@@ -68,7 +68,8 @@ app.post("/reset-game", (req, res) => {
     },
     bumper: {
       level: 0,
-      value: 0,
+      count: 0, // Start with 0 bumpers
+      value: 1, // Value for each new bumper
       multiplier: 1,
       upgradeCost: 10,
     },
