@@ -73,10 +73,23 @@ const gameState = {
   bumperMultiplier: bumperMultiplier,
 };
 
+// Function to format currency with abbreviations and no decimal points
+function formatCurrency(value) {
+  if (value >= 1000000000) {
+    return `$${Math.floor(value / 1000000000)}B`;
+  } else if (value >= 1000000) {
+    return `$${Math.floor(value / 1000000)}M`;
+  } else if (value >= 1000) {
+    return `$${Math.floor(value / 1000)}K`;
+  } else {
+    return `$${Math.floor(value)}`;
+  }
+}
+
 // Function to update the UI
 function updateUI() {
   // Update money display
-  scoreDisplay.textContent = `$${money.toFixed(2)}`;
+  scoreDisplay.textContent = formatCurrency(money);
 
   // Update base income display
   baseIncomeElement.textContent = `$${baseIncomeValue}`;
@@ -336,7 +349,7 @@ setInterval(() => {
         physics.hitCount++;
 
         // Update the money sign display with new value
-        physics.element.textContent = `$${physics.value.toFixed(1)}`;
+        physics.element.textContent = formatCurrency(physics.value);
 
         // Change the color based on value
         const intensity = Math.min(255, Math.floor(50 + physics.hitCount * 15));
@@ -406,7 +419,7 @@ setInterval(() => {
 
       // Show a floating text with the earned amount
       const earnText = document.createElement("span");
-      earnText.textContent = `+$${physics.value.toFixed(1)}`;
+      earnText.textContent = `+${formatCurrency(physics.value)}`;
       earnText.style.position = "absolute";
       earnText.style.left = `${(physics.x / gameAreaWidth) * 100}%`;
       earnText.style.top = `${gameAreaHeight - 40}px`;
