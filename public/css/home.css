@@ -74,22 +74,52 @@ body {
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8); /* Add shadow for better visibility */
 }
 
+/* Update the sidebar styles to fix overflow */
 .sidebar {
   width: 300px;
-  height: 700px; /* Match the height of the game area */
-  background-color: rgba(255, 255, 255, 0.2); /* Fully transparent sidebar */
-  backdrop-filter: blur(5px); /* Add a slight blur effect for transparency */
+  height: 800px; /* Match the height of the game area */
+  background-color: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(5px);
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 15px; /* Reduce gap slightly */
   padding: 10px;
   border-radius: 10px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); /* Add a subtle shadow for depth */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  overflow-y: auto; /* Add scroll if content overflows */
 }
 
+/* Make special upgrades more compact */
+.special-upgrades {
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* Reduce gap */
+  margin-top: 10px; /* Reduce margin */
+}
+
+.upgrade-block {
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 8px;
+  padding: 10px; /* Reduce padding */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px; /* Reduce gap */
+}
+
+/* Make money signs have fixed size */
+#money-signs span {
+  position: absolute;
+  font-size: 18px; /* Fixed size for money signs */
+  color: #00ff00; /* Green */
+  font-weight: bold;
+  user-select: none;
+}
+
+/* Update the stats section to be more compact */
 .stats {
   display: flex;
-  gap: 10px;
+  gap: 5px; /* Reduce gap */
 }
 
 .bonus,
@@ -98,23 +128,35 @@ body {
 .base-income,
 .speed,
 .next-level {
-  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black */
+  background-color: rgba(0, 0, 0, 0.5);
   color: #ffffff;
-  padding: 10px;
+  padding: 8px; /* Reduce padding */
   text-align: center;
   border-radius: 5px;
+  font-size: 14px; /* Slightly smaller font */
 }
 
+/* Make upgrade slots more compact */
 .upgrades {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
+  gap: 8px; /* Reduce gap */
 }
 
 .upgrade-slot {
-  background-color: #ffd700;
-  height: 50px;
-  border-radius: 5px;
+  height: 45px; /* Slightly smaller height */
+}
+
+/* Make next level indicator more compact */
+.next-level {
+  margin-top: auto;
+  padding: 8px;
+}
+
+/* Make stored bumpers slightly smaller */
+.stored-bumper {
+  width: 45px;
+  height: 45px;
 }
 
 /* Upgraded special upgrades section */
@@ -261,8 +303,6 @@ body {
   right: 20%;
 }
 
-/* Add these styles to home.css */
-
 /* Bumper placeholder styles */
 .bumper-placeholder {
   position: absolute;
@@ -316,13 +356,13 @@ body {
 
 /* Remove the movement transform and only keep the scale effect */
 .game-area .bumper:hover {
-  scale:(1.1);
+  scale: (1.1);
   box-shadow: 0 0 15px rgba(255, 215, 0, 0.7);
 }
 
 .game-area .bumper.dragging {
   opacity: 0.6;
-  scale:(0.9);
+  scale: (0.9);
 }
 
 /* Style for bumpers in upgrade slots */
@@ -429,6 +469,22 @@ body {
 
   .sidebar {
     width: 300px;
-    height: 700px;
+    height: 800px;
+  }
+}
+
+@media screen and (max-width: 1080px) {
+  .game-container {
+    gap: 30px;
+  }
+
+  .game-area {
+    width: 600px;
+    height: 600px;
+  }
+
+  .sidebar {
+    width: 200px;
+    height: 600px;
   }
 }

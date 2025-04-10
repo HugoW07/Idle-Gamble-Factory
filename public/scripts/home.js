@@ -354,9 +354,6 @@ setInterval(() => {
         // Change the color based on value
         const intensity = Math.min(255, Math.floor(50 + physics.hitCount * 15));
         physics.element.style.color = `rgb(${intensity}, 255, ${intensity})`;
-        physics.element.style.fontSize = `${
-          16 + Math.min(24, physics.hitCount * 2)
-        }px`;
 
         // Add visual feedback - flash the bumper
         bumper.style.backgroundColor = "rgba(255, 255, 0, 0.8)"; // Flash yellow
