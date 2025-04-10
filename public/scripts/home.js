@@ -35,7 +35,7 @@ let baseIncomeValue = 1; // Start at $1
 let baseIncomeUpgradeCost = 10; // Initial upgrade cost
 
 // Speed stats
-let speedLevel = 1;
+let speedLevel = 1; // Start at level 1
 let speedValue = 1; // Start at $1
 let speedUpgradeCost = 10; // Initial upgrade cost
 
@@ -73,16 +73,16 @@ const gameState = {
   bumperMultiplier: bumperMultiplier,
 };
 
-// Function to format currency with abbreviations and no decimal points
+// Function to format currency with abbreviations and one decimal point
 function formatCurrency(value) {
   if (value >= 1000000000) {
-    return `$${Math.floor(value / 1000000000)}B`;
+    return `$${(value / 1000000000).toFixed(1)}B`; // Billions with one decimal
   } else if (value >= 1000000) {
-    return `$${Math.floor(value / 1000000)}M`;
+    return `$${(value / 1000000).toFixed(1)}M`; // Millions with one decimal
   } else if (value >= 1000) {
-    return `$${Math.floor(value / 1000)}K`;
+    return `$${(value / 1000).toFixed(1)}K`; // Thousands with one decimal
   } else {
-    return `$${Math.floor(value)}`;
+    return `$${value.toFixed(0)}`; // No decimal for values below 1000
   }
 }
 
@@ -99,9 +99,22 @@ function updateUI() {
   baseIncomeUpgradeCostElement.textContent = `$${baseIncomeUpgradeCost}`;
 
   // Update speed display
-  speedElement.textContent = `$${speedValue}`;
-  speedLevelElement.textContent = `${speedLevel} > ${speedLevel + 1}`;
+  const baseSpawnTime = 3000; // Base spawn time in milliseconds (100%)
+  const spawnTimePercentage = 100 + (speedLevel - 1) * 5; // Start at 100% and increase by 5% per level
+  const currentSpawnTime = baseSpawnTime / (spawnTimePercentage / 100) / 1000; // Convert to seconds
+  speedElement.textContent = `${spawnTimePercentage}%`; // Show current spawn speed percentage
+  speedLevelElement.textContent = `${spawnTimePercentage}% > ${
+    spawnTimePercentage + 5
+  }%`; // Show progression to the next level
   speedUpgradeCostElement.textContent = `$${speedUpgradeCost}`;
+
+  // Display spawn time in seconds
+  const spawnReductionElement = document.querySelector(
+    ".income-per-second span"
+  );
+  spawnReductionElement.textContent = `Spawn Time: ${currentSpawnTime.toFixed(
+    1
+  )}s`;
 
   // Update bumper display
   bumperLevelElement.textContent = `Level: ${bumperLevel}`;
@@ -143,7 +156,7 @@ upgradeSpeedButton.addEventListener("click", () => {
     // Increase the speed value by 1 each level
     speedValue += 1;
 
-    // Increase the cost for next upgrade
+    // Increase the cost for the next upgrade
     speedUpgradeCost = Math.round(speedUpgradeCost * 1.2);
 
     // Update spawn rate for money signs based on speed
@@ -183,9 +196,10 @@ function updateMoneySpawnRate() {
     clearInterval(window.moneySpawnInterval);
   }
 
-  // Calculate spawn rate based on speed (higher speed = faster spawn)
-  const baseSpawnTime = 3000; // 3 seconds base time
-  const spawnTime = Math.max(300, baseSpawnTime - speedValue * 50); // Minimum 0.3 seconds
+  // Calculate spawn rate based on speed upgrades
+  const baseSpawnTime = 3000; // Base spawn time in milliseconds (100%)
+  const spawnTimePercentage = 100 + (speedLevel - 1) * 5; // Start at 100% and increase by 5% per level
+  const spawnTime = Math.round(baseSpawnTime / (spawnTimePercentage / 100)); // Calculate the current spawn time in milliseconds
 
   // Create new interval with updated spawn rate
   window.moneySpawnInterval = setInterval(() => {
@@ -847,3 +861,27 @@ setInterval(() => {
       console.error("Error saving game:", error);
     });
 }, 30000); // Save every 30 seconds
+
+const resetGameButton = document.getElementById("reset-game");
+
+resetGameButton.addEventListener("click", () => {
+  if (
+    confirm("Are you sure you want to reset your game? This cannot be undone.")
+  ) {
+    fetch("/reset-game", {
+      method: "POST",
+    })
+      .then((response) => {
+        if (response.ok) {
+          alert("Game has been reset!");
+          location.reload(); // Reload the page to apply the reset state
+        } else {
+          alert("Failed to reset the game. Please try again.");
+        }
+      })
+      .catch((error) => {
+        console.error("Error resetting game:", error);
+        alert("An error occurred while resetting the game.");
+      });
+  }
+});
