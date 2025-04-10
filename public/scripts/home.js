@@ -207,6 +207,7 @@ function createMoneySign() {
     collisions: new Set(), // Track which bumpers we've collided with recently
     active: true,
     value: baseIncomeValue, // Store the current base income value
+    hitCount: 0, // New: Track how many bumpers have been hit
   };
 
   // Measure the element after it's rendered
@@ -328,8 +329,21 @@ setInterval(() => {
       if (collision) {
         collisionDetected = true;
 
-        // Apply bumper effect
-        applyBumperEffect(bumperEffect);
+        // MODIFIED: Apply bumper effect to money sign value instead of directly to money
+        // Extract numeric value from bumper effect
+        const effectValue = parseFloat(bumperEffect.replace("+", ""));
+        physics.value += effectValue;
+        physics.hitCount++;
+
+        // Update the money sign display with new value
+        physics.element.textContent = `$${physics.value.toFixed(1)}`;
+
+        // Change the color based on value
+        const intensity = Math.min(255, Math.floor(50 + physics.hitCount * 15));
+        physics.element.style.color = `rgb(${intensity}, 255, ${intensity})`;
+        physics.element.style.fontSize = `${
+          16 + Math.min(24, physics.hitCount * 2)
+        }px`;
 
         // Add visual feedback - flash the bumper
         bumper.style.backgroundColor = "rgba(255, 255, 0, 0.8)"; // Flash yellow
@@ -386,7 +400,39 @@ setInterval(() => {
 
     // Bottom bound (spikes)
     if (physics.y + physics.height > gameAreaHeight - 30) {
-      // Money is destroyed by spikes
+      // MODIFIED: Instead of destroying money sign, add its value to money count
+      money += physics.value;
+      updateUI();
+
+      // Show a floating text with the earned amount
+      const earnText = document.createElement("span");
+      earnText.textContent = `+$${physics.value.toFixed(1)}`;
+      earnText.style.position = "absolute";
+      earnText.style.left = `${(physics.x / gameAreaWidth) * 100}%`;
+      earnText.style.top = `${gameAreaHeight - 40}px`;
+      earnText.style.color = "#00ff00";
+      earnText.style.fontSize = "18px";
+      earnText.style.fontWeight = "bold";
+      earnText.style.zIndex = "100";
+      clickableArea.appendChild(earnText);
+
+      // Animate the earned text
+      let opacity = 1;
+      const animateEarnText = () => {
+        opacity -= 0.05;
+        earnText.style.opacity = opacity;
+        earnText.style.top = `${parseFloat(earnText.style.top) - 1}px`;
+
+        if (opacity > 0) {
+          requestAnimationFrame(animateEarnText);
+        } else {
+          earnText.remove();
+        }
+      };
+
+      requestAnimationFrame(animateEarnText);
+
+      // Now remove the money sign
       physics.active = false;
       physics.element.remove();
       activeMoneyPhysics.splice(i, 1);
@@ -394,31 +440,8 @@ setInterval(() => {
   }
 }, frameTime); // Run at ~60 FPS
 
-// Apply bumper effects
-function applyBumperEffect(effect) {
-  // For + bumpers
-  if (effect.startsWith("+")) {
-    // Extract numeric value
-    const value = parseFloat(effect.replace("+", ""));
-    money += value;
-  }
-  // Keep other effect types for future compatibility
-  else if (effect.includes("x")) {
-    // Multiplier effect
-    const multiplier = parseFloat(effect.replace("x", ""));
-    money *= multiplier;
-  } else if (effect.includes("-")) {
-    // Subtraction effect
-    const value = parseFloat(
-      effect.replace("K", "000").replace(/[^-\d.]/g, "")
-    );
-    money -= value;
-  }
-
-  // Ensure money doesn't go below 0
-  money = Math.max(0, money);
-  updateUI();
-}
+// Apply bumper effects - REMOVED: This function is no longer needed since bumpers modify money sign value instead
+// function applyBumperEffect() { ... }
 
 // -------------------- BUMPER DRAG AND DROP SYSTEM --------------------
 
@@ -775,20 +798,4 @@ function updateGameState() {
   gameState.bumperMultiplier = bumperMultiplier;
 }
 
-// Auto-save the game state every 60 seconds
-setInterval(() => {
-  fetch("/save-game", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(gameState),
-  })
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error("Failed to save game state.");
-      }
-      console.log("Game state saved successfully!");
-    })
-    .catch((error) => {
-      console.error("Error saving game state:", error);
-    });
-}, 60000); // Save every 60 seconds
+// Auto-
