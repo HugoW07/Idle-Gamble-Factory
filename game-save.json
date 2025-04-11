@@ -1,5 +1,5 @@
 {
-  "money": 1165,
+  "money": 1376,
   "baseIncome": {
     "level": 1,
     "value": 1,
@@ -13,7 +13,7 @@
   "bumper": {
     "level": 1,
     "value": 1,
-    "multiplier": 1.7000000000000002,
+    "multiplier": 1.8,
     "upgradeCost": 12
   }
 }

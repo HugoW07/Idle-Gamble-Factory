@@ -467,7 +467,7 @@ function createMoneySign() {
     const rect = moneySign.getBoundingClientRect();
 
     // Create a circular body for the money sign
-    const radius = Math.max(rect.width, rect.height) / 2;
+    const radius = Math.max(rect.width, rect.height) * 0.65;
     const body = Matter.Bodies.circle(x, 10, radius, {
       restitution: 1, // Bounce factor
       friction: 0, // Low friction
@@ -632,13 +632,12 @@ function makeBumperDraggable(bumper) {
   bumper.addEventListener("dragend", (event) => {
     bumper.classList.remove("dragging");
 
-    // If the drop was not successful (no valid target), return the bumper to its original position
-    // Check if bumper is still in the DOM and draggedBumper is still set
-    if (draggedBumper === bumper) {
+    // If the bumper is still in the DOM (not removed) and draggedBumper is still set
+    if (document.body.contains(bumper) && draggedBumper === bumper) {
       // Get the position of this bumper
       const position = getBumperPosition(bumper);
 
-      // Hide the placeholder for this position since the bumper is returning
+      // Hide the placeholder for this position
       const placeholder = document.querySelector(
         `.bumper-placeholder[data-position="${position}"]`
       );
@@ -646,31 +645,35 @@ function makeBumperDraggable(bumper) {
         placeholder.style.display = "none";
       }
 
-      // Recreate physics body for this bumper
-      const rect = bumper.getBoundingClientRect();
-      const gameAreaRect = clickableArea.getBoundingClientRect();
+      // Recreate physics body only if not already recreated
+      if (!bumperBodies.has(bumper)) {
+        requestAnimationFrame(() => {
+          const rect = bumper.getBoundingClientRect();
+          const gameAreaRect = clickableArea.getBoundingClientRect();
 
-      // Calculate relative position within game area
-      const x = rect.left - gameAreaRect.left + rect.width / 2;
-      const y = rect.top - gameAreaRect.top + rect.height / 2;
+          // Calculate relative position within game area
+          const x = rect.left - gameAreaRect.left + rect.width / 2;
+          const y = rect.top - gameAreaRect.top + rect.height / 2;
 
-      // Create circular bumper body
-      const radius = rect.width / 2;
-      const bumperBody = Matter.Bodies.circle(x, y, radius, {
-        isStatic: true,
-        restitution: 1.2,
-        friction: 0,
-        label: "bumper",
-        bumperElement: bumper,
-      });
+          // Create circular bumper body
+          const radius = rect.width / 2;
+          const bumperBody = Matter.Bodies.circle(x, y, radius, {
+            isStatic: true,
+            restitution: 1.2,
+            friction: 0,
+            label: "bumper",
+            bumperElement: bumper,
+          });
 
-      // Store the body in our map
-      bumperBodies.set(bumper, bumperBody);
+          // Store the body in our map
+          bumperBodies.set(bumper, bumperBody);
 
-      // Add body to the world
-      Matter.Composite.add(world, bumperBody);
+          // Add body to the world
+          Matter.Composite.add(world, bumperBody);
+        });
+      }
 
-      // Reset draggedBumper since the operation is complete
+      // Reset draggedBumper reference
       draggedBumper = null;
     }
   });
@@ -833,33 +836,38 @@ function handleBumperDrop(placeholder) {
     // Clear the draggedBumper reference since we've handled it
     draggedBumper = null;
   }
-  // Add at the end of handleBumperDrop() function:
-  // Create physics body for the new or moved bumper
-  if (draggedBumper && draggedBumper.classList.contains("bumper")) {
-    requestAnimationFrame(() => {
-      const rect = draggedBumper.getBoundingClientRect();
-      const gameAreaRect = clickableArea.getBoundingClientRect();
+  
+  if (!draggedBumper) {
+    // Find the bumper we just placed (either new or moved)
+    const newBumper = document.querySelector(`.bumper-${position}`);
 
-      // Calculate relative position within game area
-      const x = rect.left - gameAreaRect.left + rect.width / 2;
-      const y = rect.top - gameAreaRect.top + rect.height / 2;
+    if (newBumper) {
+      // Wait for next frame to ensure positioning is complete
+      requestAnimationFrame(() => {
+        const rect = newBumper.getBoundingClientRect();
+        const gameAreaRect = clickableArea.getBoundingClientRect();
 
-      // Create circular bumper body
-      const radius = rect.width / 2;
-      const bumperBody = Matter.Bodies.circle(x, y, radius, {
-        isStatic: true,
-        restitution: 1.2,
-        friction: 0,
-        label: "bumper",
-        bumperElement: draggedBumper,
+        // Calculate relative position within game area
+        const x = rect.left - gameAreaRect.left + rect.width / 2;
+        const y = rect.top - gameAreaRect.top + rect.height / 2;
+
+        // Create circular bumper body
+        const radius = rect.width / 2;
+        const bumperBody = Matter.Bodies.circle(x, y, radius, {
+          isStatic: true,
+          restitution: 1.2, // Make bumpers very bouncy
+          friction: 0,
+          label: "bumper",
+          bumperElement: newBumper, // Store reference to the DOM element
+        });
+
+        // Store the body in our map
+        bumperBodies.set(newBumper, bumperBody);
+
+        // Add body to the world
+        Matter.Composite.add(world, bumperBody);
       });
-
-      // Store the body in our map
-      bumperBodies.set(draggedBumper, bumperBody);
-
-      // Add body to the world
-      Matter.Composite.add(world, bumperBody);
-    });
+    }
   }
 
   // Update game mechanics
