@@ -290,6 +290,7 @@ function createBumperBodies() {
 
     // Create circular bumper body
     const radius = rect.width / 2;
+    // Update in createBumperBodies() function:
     const bumperBody = Matter.Bodies.circle(x, y, radius, {
       isStatic: true,
       restitution: 1.2, // Make bumpers very bouncy
@@ -478,8 +479,8 @@ function createMoneySign() {
 
     // Add a small initial random velocity
     Matter.Body.setVelocity(body, {
-      x: (Math.random() * 2 - 1) * 2,
-      y: 2,
+      x: (Math.random() * 2 - 1) * 2, // More random horizontal movement
+      y: 2 + Math.random(), // Slightly randomized vertical speed
     });
 
     // Store the body in our map
@@ -514,6 +515,7 @@ function updateMoneySpawnRate() {
 
 // Initialize the bumper system
 function initBumperSystem() {
+  initializePhysics();
   // Make all game area bumpers draggable
   const gameBumpers = document.querySelectorAll(".game-area .bumper");
   gameBumpers.forEach((bumper) => {
@@ -830,6 +832,34 @@ function handleBumperDrop(placeholder) {
 
     // Clear the draggedBumper reference since we've handled it
     draggedBumper = null;
+  }
+  // Add at the end of handleBumperDrop() function:
+  // Create physics body for the new or moved bumper
+  if (draggedBumper && draggedBumper.classList.contains("bumper")) {
+    requestAnimationFrame(() => {
+      const rect = draggedBumper.getBoundingClientRect();
+      const gameAreaRect = clickableArea.getBoundingClientRect();
+
+      // Calculate relative position within game area
+      const x = rect.left - gameAreaRect.left + rect.width / 2;
+      const y = rect.top - gameAreaRect.top + rect.height / 2;
+
+      // Create circular bumper body
+      const radius = rect.width / 2;
+      const bumperBody = Matter.Bodies.circle(x, y, radius, {
+        isStatic: true,
+        restitution: 1.2,
+        friction: 0,
+        label: "bumper",
+        bumperElement: draggedBumper,
+      });
+
+      // Store the body in our map
+      bumperBodies.set(draggedBumper, bumperBody);
+
+      // Add body to the world
+      Matter.Composite.add(world, bumperBody);
+    });
   }
 
   // Update game mechanics
