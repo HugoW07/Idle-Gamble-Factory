@@ -2,8 +2,8 @@
 const scoreDisplay = document.querySelector(".score-display span");
 const clickableArea = document.querySelector(".clickable-area");
 const moneySignsContainer = document.getElementById("money-signs");
+const bumpers = document.querySelectorAll(".bumper");
 const upgradeBumperButton = document.getElementById("upgrade-bumper");
-const upgradeSlots = document.querySelectorAll(".upgrade-slot");
 
 // Base income elements
 const baseIncomeElement = document.querySelector(
@@ -42,12 +42,12 @@ let speedUpgradeCost = 10; // Initial upgrade cost
 // Bumper stats
 let bumperValue = 1; // Start at $1
 let bumperUpgradeCost = 10; // Initial upgrade cost
-let bumperLevel = 0; // Start with no bumpers
-let bumperCount = 0; // Track how many bumpers we have
-let bumperMultiplier = 1;
+// In home.js, update the initialization to use server values:
+let bumperLevel = parseInt("<%= bumper.level %>") || 1;
+let bumperMultiplier = parseFloat("<%= bumper.multiplier %>") || 1;
 
 // New global variables for bumper management
-let activeGameBumpers = 0; // Track how many bumpers are active in the game area
+let activeGameBumpers = 8; // Track how many bumpers are active in the game area
 const MAX_GAME_BUMPERS = 8; // Maximum number of bumpers in the game area
 let draggedBumper = null; // Track which bumper is being dragged
 
@@ -71,7 +71,6 @@ const gameState = {
   bumperValue: bumperValue,
   bumperUpgradeCost: bumperUpgradeCost,
   bumperMultiplier: bumperMultiplier,
-  bumperCount: bumperCount,
 };
 
 // Function to format currency with abbreviations and one decimal point
@@ -118,16 +117,14 @@ function updateUI() {
   )}s`;
 
   // Update bumper display
-  bumperLevelElement.textContent = `Level: ${bumperLevel} (${bumperCount} bumpers)`;
+  bumperLevelElement.textContent = `Level: ${bumperLevel}`;
   bumperCostElement.textContent = `Cost: $${bumperUpgradeCost}`;
 
   // Update bumper effect text on the game area
   const gameBumpers = document.querySelectorAll(".game-area .bumper");
   gameBumpers.forEach((bumper) => {
-    const level = parseInt(bumper.dataset.level) || 1;
-    const value = level * bumperValue;
-    bumper.dataset.effect = `+${value}`;
-    bumper.textContent = `+${value}`;
+    bumper.dataset.effect = `+${bumperValue}`;
+    bumper.textContent = `+${bumperValue}`;
   });
 }
 
@@ -171,185 +168,26 @@ upgradeSpeedButton.addEventListener("click", () => {
   }
 });
 
-// Bumper upgrade logic - now creates a new bumper instead of upgrading existing ones
+// Bumper upgrade logic
 upgradeBumperButton.addEventListener("click", () => {
   if (money >= bumperUpgradeCost) {
     money -= bumperUpgradeCost;
     bumperLevel++;
-    bumperCount++;
 
-    // Increase the cost for next bumper
+    // Increase the bumper value by 1 each level
+    bumperValue += 1;
+
+    // Increase the bumper multiplier slightly
+    bumperMultiplier += 0.1;
+
+    // Increase the cost for next upgrade
     bumperUpgradeCost = Math.round(bumperUpgradeCost * 1.2);
-
-    // Create a new bumper in the first available slot
-    createNewBumper();
 
     updateUI();
   } else {
     alert("Not enough money for bumper upgrade!");
   }
 });
-
-// Function to create a new bumper in an upgrade slot
-function createNewBumper() {
-  // Find the first empty upgrade slot
-  let emptySlot = null;
-  for (const slot of upgradeSlots) {
-    if (!slot.hasChildNodes()) {
-      emptySlot = slot;
-      break;
-    }
-  }
-
-  if (!emptySlot) {
-    alert("No empty upgrade slots available! Combine bumpers to make space.");
-    return;
-  }
-
-  // Create a new stored bumper element
-  const storedBumper = document.createElement("div");
-  storedBumper.classList.add("stored-bumper");
-  storedBumper.setAttribute("draggable", true);
-  storedBumper.dataset.level = "1"; // Level 1 bumper
-  storedBumper.dataset.effect = `+${bumperValue}`;
-  storedBumper.textContent = `+${bumperValue}`;
-
-  // Add to upgrade slot
-  emptySlot.appendChild(storedBumper);
-
-  // Make the stored bumper draggable
-  storedBumper.addEventListener("dragstart", (event) => {
-    draggedBumper = storedBumper;
-    event.dataTransfer.setData("text/plain", "stored-bumper");
-  });
-
-  storedBumper.addEventListener("dragend", () => {
-    draggedBumper = null;
-  });
-
-  // Add double-click to combine with another bumper
-  storedBumper.addEventListener("dblclick", (event) => {
-    tryToCombineBumpers(storedBumper);
-  });
-}
-
-// Function to attempt to combine bumpers
-function tryToCombineBumpers(sourceBumper) {
-  // Find another bumper of the same level
-  const sourceLevel = parseInt(sourceBumper.dataset.level) || 1;
-  
-  // Find another bumper with the same level
-  let targetBumper = null;
-  upgradeSlots.forEach(slot => {
-    const slotBumper = slot.firstChild;
-    if (slotBumper && 
-        slotBumper !== sourceBumper && 
-        parseInt(slotBumper.dataset.level) === sourceLevel) {
-      targetBumper = slotBumper;
-      return; // Exit the forEach early
-    }
-  });
-
-  if (!targetBumper) {
-    alert("No matching bumper found to combine with. You need two bumpers of the same level.");
-    return;
-  }
-
-  // Create a new higher level bumper
-  const newLevel = sourceLevel + 1;
-  const newValue = newLevel * bumperValue;
-  
-  // Remove the source bumper
-  sourceBumper.parentNode.removeChild(sourceBumper);
-  
-  // Replace the target bumper with the upgraded one
-  const upgradeSlot = targetBumper.parentNode;
-  upgradeSlot.removeChild(targetBumper);
-  
-  // Create the new higher level bumper
-  const upgradedBumper = document.createElement("div");
-  upgradedBumper.classList.add("stored-bumper");
-  upgradedBumper.setAttribute("draggable", true);
-  upgradedBumper.dataset.level = newLevel.toString();
-  upgradedBumper.dataset.effect = `+${newValue}`;
-  upgradedBumper.textContent = `+${newValue}`;
-  
-  // Add visual indicator of level
-  upgradedBumper.style.backgroundColor = getBumperColor(newLevel);
-  upgradedBumper.style.border = `3px solid ${getBumperBorderColor(newLevel)}`;
-  
-  // Add to upgrade slot
-  upgradeSlot.appendChild(upgradedBumper);
-  
-  // Make the upgraded bumper draggable
-  upgradedBumper.addEventListener("dragstart", (event) => {
-    draggedBumper = upgradedBumper;
-    event.dataTransfer.setData("text/plain", "stored-bumper");
-  });
-  
-  upgradedBumper.addEventListener("dragend", () => {
-    draggedBumper = null;
-  });
-  
-  // Add double-click to combine with another bumper of the same level
-  upgradedBumper.addEventListener("dblclick", (event) => {
-    tryToCombineBumpers(upgradedBumper);
-  });
-  
-  // Show success message
-  const message = document.createElement("div");
-  message.className = "combination-message";
-  message.textContent = `Level ${sourceLevel} + Level ${sourceLevel} = Level ${newLevel}!`;
-  message.style.position = "absolute";
-  message.style.top = "50%";
-  message.style.left = "50%";
-  message.style.transform = "translate(-50%, -50%)";
-  message.style.backgroundColor = "rgba(0, 0, 0, 0.8)";
-  message.style.color = "#ffd700";
-  message.style.padding = "10px 20px";
-  message.style.borderRadius = "5px";
-  message.style.zIndex = "100";
-  document.querySelector(".game-container").appendChild(message);
-  
-  // Remove the message after a short delay
-  setTimeout(() => {
-    message.remove();
-  }, 2000);
-}
-
-// Function to get a color based on bumper level
-function getBumperColor(level) {
-  // Color progression based on bumper level
-  const colors = [
-    "rgba(148, 0, 211, 0.8)", // Level 1: Purple
-    "rgba(0, 0, 255, 0.8)",   // Level 2: Blue
-    "rgba(0, 128, 0, 0.8)",   // Level 3: Green
-    "rgba(255, 165, 0, 0.8)", // Level 4: Orange
-    "rgba(255, 0, 0, 0.8)",   // Level 5: Red
-    "rgba(255, 0, 255, 0.8)", // Level 6: Magenta
-    "rgba(0, 255, 255, 0.8)", // Level 7: Cyan
-    "rgba(255, 215, 0, 0.8)"  // Level 8+: Gold
-  ];
-  
-  return level <= colors.length ? colors[level - 1] : colors[colors.length - 1];
-}
-
-// Function to get a border color based on bumper level
-function getBumperBorderColor(level) {
-  // Border color progression based on bumper level
-  const borderColors = [
-    "rgba(255, 215, 0, 0.8)",  // Level 1: Gold
-    "rgba(255, 255, 255, 0.8)", // Level 2: White
-    "rgba(0, 255, 0, 0.8)",     // Level 3: Bright Green
-    "rgba(255, 255, 0, 0.8)",   // Level 4: Yellow
-    "rgba(255, 0, 0, 0.8)",     // Level 5: Red
-    "rgba(255, 0, 255, 0.8)",   // Level 6: Magenta
-    "rgba(0, 255, 255, 0.8)",   // Level 7: Cyan
-    "rgba(255, 255, 255, 0.9)"  // Level 8+: Bright White
-  ];
-  
-  return level <= borderColors.length ? borderColors[level - 1] : borderColors[borderColors.length - 1];
-}
 
 // Function to update money spawn rate based on speed
 function updateMoneySpawnRate() {
@@ -453,7 +291,6 @@ setInterval(() => {
     activeBumpers.forEach((bumper) => {
       const bumperRect = bumper.getBoundingClientRect();
       const bumperEffect = bumper.dataset.effect;
-      const bumperLevel = parseInt(bumper.dataset.level) || 1;
 
       // Skip if we recently collided with this bumper
       if (physics.collisions.has(bumperEffect)) return;
@@ -519,6 +356,7 @@ setInterval(() => {
       if (collision) {
         collisionDetected = true;
 
+        // MODIFIED: Apply bumper effect to money sign value instead of directly to money
         // Extract numeric value from bumper effect
         const effectValue = parseFloat(bumperEffect.replace("+", ""));
         physics.value += effectValue;
@@ -531,11 +369,10 @@ setInterval(() => {
         const intensity = Math.min(255, Math.floor(50 + physics.hitCount * 15));
         physics.element.style.color = `rgb(${intensity}, 255, ${intensity})`;
 
-        // Add visual feedback - flash the bumper with color based on level
-        const originalColor = bumper.style.backgroundColor;
+        // Add visual feedback - flash the bumper
         bumper.style.backgroundColor = "rgba(255, 255, 0, 0.8)"; // Flash yellow
         setTimeout(() => {
-          bumper.style.backgroundColor = originalColor || getBumperColor(bumperLevel);
+          bumper.style.backgroundColor = "rgba(148, 0, 211, 0.8)"; // Back to purple
         }, 100);
 
         // Calculate collision response
@@ -587,7 +424,7 @@ setInterval(() => {
 
     // Bottom bound (spikes)
     if (physics.y + physics.height > gameAreaHeight - 30) {
-      // Add value to money count
+      // MODIFIED: Instead of destroying money sign, add its value to money count
       money += physics.value;
       updateUI();
 
@@ -627,10 +464,19 @@ setInterval(() => {
   }
 }, frameTime); // Run at ~60 FPS
 
+// Apply bumper effects - REMOVED: This function is no longer needed since bumpers modify money sign value instead
+// function applyBumperEffect() { ... }
+
 // -------------------- BUMPER DRAG AND DROP SYSTEM --------------------
 
 // Initialize the bumper system
 function initBumperSystem() {
+  // Make all game area bumpers draggable
+  const gameBumpers = document.querySelectorAll(".game-area .bumper");
+  gameBumpers.forEach((bumper) => {
+    makeBumperDraggable(bumper);
+  });
+
   // Create empty placeholders for each bumper position
   createBumperPlaceholders();
 
@@ -641,49 +487,37 @@ function initBumperSystem() {
 // Create placeholder elements for bumper positions
 function createBumperPlaceholders() {
   const clickableArea = document.querySelector(".clickable-area");
-  
-  // Define fixed positions for the 8 bumper placeholders
-  const placeholderPositions = [
-    // First row - 3 bumpers
-    { top: '15%', left: '20%', right: '', bottom: '', transform: '' },
-    { top: '15%', left: '50%', right: '', bottom: '', transform: 'translateX(-50%)' },
-    { top: '15%', left: '', right: '20%', bottom: '', transform: '' },
-    
-    // Second row - 2 bumpers
-    { top: '50%', left: '30%', right: '', bottom: '', transform: 'translateY(-50%)' },
-    { top: '50%', left: '', right: '30%', bottom: '', transform: 'translateY(-50%)' },
-    
-    // Third row - 3 bumpers
-    { top: '', left: '20%', right: '', bottom: '15%', transform: '' },
-    { top: '', left: '50%', right: '', bottom: '15%', transform: 'translateX(-50%)' },
-    { top: '', left: '', right: '20%', bottom: '15%', transform: '' }
-  ];
-  
+  const gameAreaRect = clickableArea.getBoundingClientRect();
+
   // Create placeholders for each possible bumper position (1-8)
   for (let i = 1; i <= MAX_GAME_BUMPERS; i++) {
     const placeholder = document.createElement("div");
     placeholder.classList.add("bumper-placeholder");
     placeholder.dataset.position = i;
-    
-    // Get the position data from our predefined array
-    const position = placeholderPositions[i-1];
-    
-    // Store all position data attributes for precise repositioning
-    placeholder.dataset.top = position.top;
-    placeholder.dataset.left = position.left;
-    placeholder.dataset.bottom = position.bottom;
-    placeholder.dataset.right = position.right;
-    placeholder.dataset.transform = position.transform;
-    
-    // Apply the positioning
-    placeholder.style.top = position.top;
-    placeholder.style.left = position.left;
-    placeholder.style.bottom = position.bottom;
-    placeholder.style.right = position.right;
-    placeholder.style.transform = position.transform;
-    
-    // Always show placeholders initially (game starts with no bumpers)
-    placeholder.style.display = "flex";
+
+    // Get the original bumper for this position
+    const bumper = document.querySelector(`.bumper-${i}`);
+    if (bumper) {
+      // Store the original CSS positioning properties
+      const computedStyle = window.getComputedStyle(bumper);
+
+      // Store all position data attributes for precise repositioning
+      placeholder.dataset.top = computedStyle.top;
+      placeholder.dataset.left = computedStyle.left;
+      placeholder.dataset.bottom = computedStyle.bottom;
+      placeholder.dataset.right = computedStyle.right;
+      placeholder.dataset.transform = computedStyle.transform;
+
+      // Apply the exact positioning to match the bumper
+      placeholder.style.top = computedStyle.top;
+      placeholder.style.left = computedStyle.left;
+      placeholder.style.bottom = computedStyle.bottom;
+      placeholder.style.right = computedStyle.right;
+      placeholder.style.transform = computedStyle.transform;
+
+      // Initially hide placeholder since bumper is present
+      placeholder.style.display = "none";
+    }
 
     // Make placeholder droppable
     placeholder.addEventListener("dragover", (event) => {
@@ -691,4 +525,363 @@ function createBumperPlaceholders() {
       placeholder.classList.add("dragover");
     });
 
-    placeholder.
+    placeholder.addEventListener("dragleave", () => {
+      placeholder.classList.remove("dragover");
+    });
+
+    placeholder.addEventListener("drop", (event) => {
+      event.preventDefault();
+      placeholder.classList.remove("dragover");
+      handleBumperDrop(placeholder);
+    });
+
+    clickableArea.appendChild(placeholder);
+  }
+}
+
+// Make a bumper element draggable
+function makeBumperDraggable(bumper) {
+  bumper.setAttribute("draggable", true);
+
+  bumper.addEventListener("dragstart", (event) => {
+    draggedBumper = bumper;
+    // Set the drag image and data
+    event.dataTransfer.setData("text/plain", bumper.getAttribute("class"));
+    event.dataTransfer.effectAllowed = "move";
+
+    // Add dragging class for styling
+    bumper.classList.add("dragging");
+
+    // Show the placeholder where this bumper was
+    const position = getBumperPosition(bumper);
+    const placeholder = document.querySelector(
+      `.bumper-placeholder[data-position="${position}"]`
+    );
+    if (placeholder) {
+      // Store the current bumper's exact position before showing placeholder
+      const computedStyle = window.getComputedStyle(bumper);
+      placeholder.dataset.top = computedStyle.top;
+      placeholder.dataset.left = computedStyle.left;
+      placeholder.dataset.bottom = computedStyle.bottom;
+      placeholder.dataset.right = computedStyle.right;
+      placeholder.dataset.transform = computedStyle.transform;
+
+      // Apply the exact positioning
+      placeholder.style.top = computedStyle.top;
+      placeholder.style.left = computedStyle.left;
+      placeholder.style.bottom = computedStyle.bottom;
+      placeholder.style.right = computedStyle.right;
+      placeholder.style.transform = computedStyle.transform;
+
+      placeholder.style.display = "flex";
+    }
+  });
+
+  bumper.addEventListener("dragend", (event) => {
+    bumper.classList.remove("dragging");
+
+    // If the drop was not successful (no valid target), return the bumper to its original position
+    // Check if bumper is still in the DOM and draggedBumper is still set
+    if (draggedBumper === bumper) {
+      // Get the position of this bumper
+      const position = getBumperPosition(bumper);
+
+      // Hide the placeholder for this position since the bumper is returning
+      const placeholder = document.querySelector(
+        `.bumper-placeholder[data-position="${position}"]`
+      );
+      if (placeholder) {
+        placeholder.style.display = "none";
+      }
+
+      // Reset draggedBumper since the operation is complete
+      draggedBumper = null;
+    }
+  });
+}
+
+// Get the position number from a bumper's class
+function getBumperPosition(bumper) {
+  const classes = bumper.className.split(" ");
+  for (const cls of classes) {
+    if (cls.startsWith("bumper-")) {
+      return parseInt(cls.replace("bumper-", ""));
+    }
+  }
+  return null;
+}
+
+// Initialize upgrade slots to accept bumpers
+function initUpgradeSlots() {
+  const upgradeSlots = document.querySelectorAll(".upgrade-slot");
+
+  upgradeSlots.forEach((slot) => {
+    // Make each slot a drop target
+    slot.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      slot.classList.add("dragover");
+    });
+
+    slot.addEventListener("dragleave", () => {
+      slot.classList.remove("dragover");
+    });
+
+    slot.addEventListener("drop", (event) => {
+      event.preventDefault();
+      slot.classList.remove("dragover");
+
+      // Handle dropping a bumper on an upgrade slot
+      if (draggedBumper && !slot.hasChildNodes()) {
+        handleBumperStoreDrop(slot);
+      }
+    });
+
+    // Make stored bumpers draggable back to the game area
+    slot.addEventListener("dragstart", (event) => {
+      if (
+        slot.firstChild &&
+        slot.firstChild.classList.contains("stored-bumper")
+      ) {
+        draggedBumper = slot.firstChild;
+        event.dataTransfer.setData("text/plain", "stored-bumper");
+      }
+    });
+  });
+}
+
+// Handle dropping a bumper onto an upgrade slot
+function handleBumperStoreDrop(slot) {
+  if (!draggedBumper) return;
+
+  // Get position for placeholder visibility
+  const position = getBumperPosition(draggedBumper);
+
+  // Create a new stored bumper element
+  const storedBumper = document.createElement("div");
+  storedBumper.classList.add("stored-bumper");
+  storedBumper.setAttribute("draggable", true);
+  storedBumper.dataset.position = position;
+  storedBumper.dataset.effect = draggedBumper.dataset.effect;
+  storedBumper.textContent = draggedBumper.textContent;
+
+  // Add to upgrade slot
+  slot.appendChild(storedBumper);
+
+  // Remove the original bumper from game area
+  draggedBumper.remove();
+  activeGameBumpers--;
+
+  // Make the stored bumper draggable
+  storedBumper.addEventListener("dragstart", (event) => {
+    draggedBumper = storedBumper;
+    event.dataTransfer.setData("text/plain", "stored-bumper");
+  });
+
+  storedBumper.addEventListener("dragend", () => {
+    draggedBumper = null;
+  });
+
+  // Clear the draggedBumper reference since we've handled it
+  draggedBumper = null;
+
+  // Update game mechanics
+  updateBumperGameEffects();
+}
+
+// Update the handleBumperDrop function to properly clear draggedBumper
+function handleBumperDrop(placeholder) {
+  if (!draggedBumper) return;
+
+  const position = placeholder.dataset.position;
+
+  // If dropping a stored bumper from upgrade slot
+  if (draggedBumper.classList.contains("stored-bumper")) {
+    // Create a new game bumper
+    const newBumper = document.createElement("div");
+    newBumper.classList.add("bumper", `bumper-${position}`);
+    newBumper.dataset.effect = draggedBumper.dataset.effect;
+    newBumper.textContent = draggedBumper.textContent;
+
+    // Apply the EXACT position and transform from the placeholder's stored data
+    newBumper.style.top = placeholder.dataset.top || placeholder.style.top;
+    newBumper.style.left = placeholder.dataset.left || placeholder.style.left;
+    newBumper.style.bottom = placeholder.dataset.bottom || "";
+    newBumper.style.right = placeholder.dataset.right || "";
+    newBumper.style.transform = placeholder.dataset.transform || "";
+
+    // Add to game area
+    document.querySelector(".clickable-area").appendChild(newBumper);
+
+    // Remove from upgrade slot
+    draggedBumper.parentNode.removeChild(draggedBumper);
+
+    // Hide placeholder
+    placeholder.style.display = "none";
+
+    // Make the new bumper draggable
+    makeBumperDraggable(newBumper);
+
+    activeGameBumpers++;
+
+    // Clear the draggedBumper reference since we've handled it
+    draggedBumper = null;
+  }
+  // If moving a bumper from another position
+  else if (draggedBumper.classList.contains("bumper")) {
+    // Get original position
+    const originalPosition = getBumperPosition(draggedBumper);
+
+    // Update the bumper's class to the new position
+    draggedBumper.className = draggedBumper.className.replace(
+      `bumper-${originalPosition}`,
+      `bumper-${position}`
+    );
+
+    // Apply the EXACT position and transform from the placeholder's stored data
+    draggedBumper.style.top = placeholder.dataset.top || placeholder.style.top;
+    draggedBumper.style.left =
+      placeholder.dataset.left || placeholder.style.left;
+    draggedBumper.style.bottom = placeholder.dataset.bottom || "";
+    draggedBumper.style.right = placeholder.dataset.right || "";
+    draggedBumper.style.transform = placeholder.dataset.transform || "";
+
+    // Hide the new placeholder, show the old one
+    placeholder.style.display = "none";
+    const originalPlaceholder = document.querySelector(
+      `.bumper-placeholder[data-position="${originalPosition}"]`
+    );
+    if (originalPlaceholder) {
+      originalPlaceholder.style.display = "flex";
+    }
+
+    // Clear the draggedBumper reference since we've handled it
+    draggedBumper = null;
+  }
+
+  // Update game mechanics
+  updateBumperGameEffects();
+}
+
+// Update game mechanics based on number of active bumpers
+function updateBumperGameEffects() {
+  // Update bumper multiplier based on active bumpers
+  // More bumpers = higher multiplier
+  const baseBumperValue = 0.1;
+  bumperMultiplier = 1 + activeGameBumpers * baseBumperValue;
+
+  // Update UI
+  updateUI();
+}
+
+// Initialize after DOM is fully loaded
+document.addEventListener("DOMContentLoaded", () => {
+  fetch("/load-game")
+    .then((response) => response.json())
+    .then((gameState) => {
+      // Update game variables with the loaded state
+      money = gameState.money;
+      baseIncomeLevel = gameState.baseIncome.level;
+      baseIncomeValue = gameState.baseIncome.value;
+      baseIncomeUpgradeCost = gameState.baseIncome.upgradeCost;
+      speedLevel = gameState.speed.level;
+      speedValue = gameState.speed.value;
+      speedUpgradeCost = gameState.speed.upgradeCost;
+      bumperLevel = gameState.bumper.level;
+      bumperValue = gameState.bumper.value;
+      bumperMultiplier = gameState.bumper.multiplier;
+      bumperUpgradeCost = gameState.bumper.upgradeCost;
+
+      // Update the UI
+      updateUI();
+    })
+    .catch((error) => {
+      console.error("Error loading game state:", error);
+    });
+
+  // Set initial values
+  updateUI();
+
+  // Initialize money spawn interval
+  updateMoneySpawnRate();
+
+  // Initialize the bumper drag and drop system
+  initBumperSystem();
+});
+
+function updateGameState() {
+  gameState.money = money;
+  gameState.baseIncomeLevel = baseIncomeLevel;
+  gameState.baseIncomeValue = baseIncomeValue;
+  gameState.baseIncomeUpgradeCost = baseIncomeUpgradeCost;
+  gameState.speedLevel = speedLevel;
+  gameState.speedValue = speedValue;
+  gameState.speedUpgradeCost = speedUpgradeCost;
+  gameState.bumperLevel = bumperLevel;
+  gameState.bumperValue = bumperValue;
+  gameState.bumperUpgradeCost = bumperUpgradeCost;
+  gameState.bumperMultiplier = bumperMultiplier;
+}
+
+// Auto-save game state every 30 seconds
+setInterval(() => {
+  updateGameState();
+
+  // Send game state to server
+  fetch("/save-game", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      money: money,
+      baseIncome: {
+        level: baseIncomeLevel,
+        value: baseIncomeValue,
+        upgradeCost: baseIncomeUpgradeCost,
+      },
+      speed: {
+        level: speedLevel,
+        value: speedValue,
+        upgradeCost: speedUpgradeCost,
+      },
+      bumper: {
+        level: bumperLevel,
+        value: bumperValue,
+        multiplier: bumperMultiplier,
+        upgradeCost: bumperUpgradeCost,
+      },
+    }),
+  })
+    .then((response) => {
+      if (response.ok) {
+        console.log("Game saved successfully");
+      }
+    })
+    .catch((error) => {
+      console.error("Error saving game:", error);
+    });
+}, 30000); // Save every 30 seconds
+
+const resetGameButton = document.getElementById("reset-game");
+
+resetGameButton.addEventListener("click", () => {
+  if (
+    confirm("Are you sure you want to reset your game? This cannot be undone.")
+  ) {
+    fetch("/reset-game", {
+      method: "POST",
+    })
+      .then((response) => {
+        if (response.ok) {
+          alert("Game has been reset!");
+          location.reload(); // Reload the page to apply the reset state
+        } else {
+          alert("Failed to reset the game. Please try again.");
+        }
+      })
+      .catch((error) => {
+        console.error("Error resetting game:", error);
+        alert("An error occurred while resetting the game.");
+      });
+  }
+});
