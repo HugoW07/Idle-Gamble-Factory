@@ -193,7 +193,7 @@ function initializePhysics() {
   // Create engine and world
   engine = Matter.Engine.create({
     enableSleeping: false,
-    gravity: { x: 0, y: 0.5 }, // Customize gravity to match your previous physics
+    gravity: { x: 0, y: 0.4 }, // Customize gravity to match your previous physics
   });
   world = engine.world;
 
@@ -469,9 +469,9 @@ function createMoneySign() {
     // Create a circular body for the money sign
     const radius = Math.max(rect.width, rect.height) / 2;
     const body = Matter.Bodies.circle(x, 10, radius, {
-      restitution: 0.7, // Bounce factor
-      friction: 0.05, // Low friction
-      frictionAir: 0.001, // Low air resistance
+      restitution: 1, // Bounce factor
+      friction: 0, // Low friction
+      frictionAir: 0, // Low air resistance
       label: "money",
       moneyElement: moneySign, // Store reference to DOM element
       physicsObject: physics, // Store reference to our physics tracking object
