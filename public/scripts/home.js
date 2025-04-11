@@ -208,6 +208,10 @@ function initializePhysics() {
     restitution: 0.7, // Make walls bouncy
     friction: 0.1,
     label: "wall",
+    collisionFilter: {
+      category: 0x0001, // Wall category
+      mask: 0x0002, // Only collide with money signs
+    },
   };
 
   // Left wall
@@ -253,6 +257,10 @@ function initializePhysics() {
       isStatic: true,
       isSensor: true, // This makes it a sensor that detects collisions without providing physics response
       label: "spike",
+      collisionFilter: {
+        category: 0x0001, // Wall category
+        mask: 0x0002, // Only collide with money signs
+      },
     }
   );
 
@@ -290,7 +298,6 @@ function createBumperBodies() {
 
     // Create circular bumper body
     const radius = rect.width / 2;
-    // Update in createBumperBodies() function:
     const bumperBody = Matter.Bodies.circle(x, y, radius, {
       isStatic: true,
       restitution: 1.2, // Make bumpers very bouncy
@@ -299,6 +306,10 @@ function createBumperBodies() {
       bumperElement: bumper, // Store reference to the DOM element
       render: {
         visible: false, // Don't render in Matter.js renderer if you're using one
+      },
+      collisionFilter: {
+        category: 0x0001, // Bumper category (same as walls)
+        mask: 0x0002, // Only collide with money signs
       },
     });
 
@@ -441,6 +452,7 @@ function updatePhysicsPositions() {
 }
 
 // Function to create a money sign with Matter.js physics
+// Function to create a money sign with Matter.js physics
 function createMoneySign() {
   // Create the DOM element
   const moneySign = document.createElement("span");
@@ -475,6 +487,12 @@ function createMoneySign() {
       label: "money",
       moneyElement: moneySign, // Store reference to DOM element
       physicsObject: physics, // Store reference to our physics tracking object
+
+      // Add collision filtering
+      collisionFilter: {
+        category: 0x0002, // Money signs category
+        mask: 0x0001, // Only collide with category 0x0001 (walls and bumpers)
+      },
     });
 
     // Add a small initial random velocity
@@ -836,7 +854,8 @@ function handleBumperDrop(placeholder) {
     // Clear the draggedBumper reference since we've handled it
     draggedBumper = null;
   }
-  
+
+  // Fix the bumper recreation in handleBumperDrop function
   if (!draggedBumper) {
     // Find the bumper we just placed (either new or moved)
     const newBumper = document.querySelector(`.bumper-${position}`);
@@ -859,6 +878,10 @@ function handleBumperDrop(placeholder) {
           friction: 0,
           label: "bumper",
           bumperElement: newBumper, // Store reference to the DOM element
+          collisionFilter: {
+            category: 0x0001, // Bumper category (same as walls)
+            mask: 0x0002, // Only collide with money signs
+          },
         });
 
         // Store the body in our map
