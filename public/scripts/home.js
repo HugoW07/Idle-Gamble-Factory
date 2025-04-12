@@ -72,6 +72,33 @@ const gameState = {
   bumperMultiplier: bumperMultiplier,
 };
 
+// FPS counter implementation
+let frameCount = 0;
+let fpsStartTime = performance.now();
+const fpsDisplay = document.querySelector(".fps-counter span");
+
+function updateFPS() {
+  frameCount++;
+  const currentTime = performance.now();
+  const elapsed = currentTime - fpsStartTime;
+
+  // Update FPS every second
+  if (elapsed >= 1000) {
+    const fps = Math.round((frameCount * 1000) / elapsed);
+    fpsDisplay.textContent = `${fps} FPS`;
+
+    // Reset counters
+    frameCount = 0;
+    fpsStartTime = currentTime;
+  }
+
+  // Request next frame
+  requestAnimationFrame(updateFPS);
+}
+
+// Start FPS counter
+requestAnimationFrame(updateFPS);
+
 // Function to format currency with abbreviations and one decimal point
 function formatCurrency(value) {
   if (value >= 1000000000) {
@@ -117,7 +144,7 @@ function updateUI() {
 
   // Update bumper display
   bumperLevelElement.textContent = `Level: ${bumperLevel}`;
-  bumperCostElement.textContent = `Cost: $${bumperUpgradeCost}`;
+  bumperCostElement.textContent = `$${bumperUpgradeCost}`;
 
   // Update bumper effect text on the game area
   const gameBumpers = document.querySelectorAll(".game-area .bumper");
