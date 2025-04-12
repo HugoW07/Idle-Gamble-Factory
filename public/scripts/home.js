@@ -220,7 +220,7 @@ function initializePhysics() {
   // Create engine and world
   engine = Matter.Engine.create({
     enableSleeping: false,
-    gravity: { x: 0, y: 0.4 }, // Customize gravity to match your previous physics
+    gravity: { x: 0, y: 0.3 }, // Reduced gravity for more controlled movement
   });
   world = engine.world;
 
@@ -232,8 +232,8 @@ function initializePhysics() {
   // Add walls (invisible) to contain the money signs
   const wallOptions = {
     isStatic: true,
-    restitution: 0.7, // Make walls bouncy
-    friction: 0,
+    restitution: 0.6, // Slightly less bouncy walls
+    friction: 0, // A bit of friction
     label: "wall",
     collisionFilter: {
       category: 0x0001, // Wall category
@@ -241,10 +241,10 @@ function initializePhysics() {
     },
   };
 
-  // Left wall
+  // Left wall - moved slightly inward for better edge collision
   walls.push(
     Matter.Bodies.rectangle(
-      0,
+      5,
       gameAreaHeight / 2,
       10,
       gameAreaHeight,
@@ -252,10 +252,10 @@ function initializePhysics() {
     )
   );
 
-  // Right wall
+  // Right wall - moved slightly inward for better edge collision
   walls.push(
     Matter.Bodies.rectangle(
-      gameAreaWidth,
+      gameAreaWidth - 5,
       gameAreaHeight / 2,
       10,
       gameAreaHeight,
@@ -263,11 +263,11 @@ function initializePhysics() {
     )
   );
 
-  // Top wall
+  // Top wall - moved slightly downward for better edge collision
   walls.push(
     Matter.Bodies.rectangle(
       gameAreaWidth / 2,
-      0,
+      5,
       gameAreaWidth,
       10,
       wallOptions
@@ -314,20 +314,20 @@ function initializePhysics() {
 function createBumperBodies() {
   // Get all bumpers in the game area
   const gameBumpers = document.querySelectorAll(".game-area .bumper");
+  const gameAreaRect = clickableArea.getBoundingClientRect();
 
   gameBumpers.forEach((bumper) => {
     const rect = bumper.getBoundingClientRect();
-    const gameAreaRect = clickableArea.getBoundingClientRect();
 
     // Calculate relative position within game area
     const x = rect.left - gameAreaRect.left + rect.width / 2;
     const y = rect.top - gameAreaRect.top + rect.height / 2;
 
-    // Create circular bumper body
-    const radius = rect.width / 2;
+    // Create circular bumper body - use a slightly smaller radius for more accurate visual collisions
+    const radius = (rect.width / 2) * 0.8; // 80% of visual size for better collision accuracy
     const bumperBody = Matter.Bodies.circle(x, y, radius, {
       isStatic: true,
-      restitution: 0.2, // Make bumpers very bouncy
+      restitution: 0.8, // Slightly reduce bounciness for more realistic physics
       friction: 0,
       label: "bumper",
       bumperElement: bumper, // Store reference to the DOM element
@@ -400,23 +400,25 @@ function handleCollisions(event) {
           bumperElement.style.backgroundColor = "rgba(148, 0, 211, 0.8)"; // Back to purple
         }, 100);
 
-        // Apply an extra impulse for more exciting physics
-        const force = 0.005 * (physicsObject.hitCount + 1);
-        const angle = Math.atan2(
-          moneyBody.position.y - otherBody.position.y,
-          moneyBody.position.x - otherBody.position.x
+        // Calculate the collision vector
+        const collisionVector = Matter.Vector.sub(
+          moneyBody.position,
+          otherBody.position
         );
+        const normalizedVector = Matter.Vector.normalise(collisionVector);
 
+        // Apply a more consistent and visually appropriate impulse
+        const forceMagnitude = 0.004 * (physicsObject.hitCount + 1);
         Matter.Body.applyForce(moneyBody, moneyBody.position, {
-          x: Math.cos(angle) * force,
-          y: Math.sin(angle) * force,
+          x: normalizedVector.x * forceMagnitude,
+          y: normalizedVector.y * forceMagnitude,
         });
 
         // Prevent multiple collisions with the same bumper for a short time
         physicsObject.collisions.add(bumperEffect);
         setTimeout(() => {
           physicsObject.collisions.delete(bumperEffect);
-        }, 500);
+        }, 300); // Reduced from 500ms for more responsive collisions
       }
     }
     // Handle collision with spike (bottom sensor)
@@ -473,13 +475,13 @@ function updatePhysicsPositions() {
     element.style.left = `${(body.position.x / gameAreaRect.width) * 100}%`;
     element.style.top = `${body.position.y}px`;
 
-    // Optional: apply rotation if desired
-    // element.style.transform = `rotate(${body.angle * (180 / Math.PI)}deg)`;
+    // Apply slight rotation based on velocity for more natural movement
+    const velocityAngle = Math.atan2(body.velocity.y, body.velocity.x);
+    const rotationAmount = body.velocity.x * 0.05; // Small rotation based on horizontal velocity
+    element.style.transform = `rotate(${rotationAmount}rad)`;
   });
 }
 
-// Function to create a money sign with Matter.js physics
-// Function to create a money sign with Matter.js physics
 function createMoneySign() {
   // Create the DOM element
   const moneySign = document.createElement("span");
@@ -505,12 +507,13 @@ function createMoneySign() {
   requestAnimationFrame(() => {
     const rect = moneySign.getBoundingClientRect();
 
-    // Create a circular body for the money sign
-    const radius = Math.max(rect.width, rect.height) * 0.65;
-    const body = Matter.Bodies.circle(x, 10, radius, {
-      restitution: 1, // Bounce factor
-      friction: 0, // Low friction
-      frictionAir: 0, // Low air resistance
+    // Create a circular body for the money sign - make it smaller than visual element
+    const radius = Math.max(rect.width, rect.height) * 0.4; // Smaller physics body for better collision visuals
+    const body = Matter.Bodies.circle(x, 20, radius, {
+      // Start slightly lower to avoid instant collisions
+      restitution: 0.7, // Reduce bounce factor slightly
+      friction: 0,
+      frictionAir: 0,
       label: "money",
       moneyElement: moneySign, // Store reference to DOM element
       physicsObject: physics, // Store reference to our physics tracking object
@@ -524,8 +527,8 @@ function createMoneySign() {
 
     // Add a small initial random velocity
     Matter.Body.setVelocity(body, {
-      x: (Math.random() * 2 - 1) * 2, // More random horizontal movement
-      y: 2 + Math.random(), // Slightly randomized vertical speed
+      x: (Math.random() * 2 - 1) * 1.5, // More controlled horizontal movement
+      y: 1 + Math.random() * 0.5, // More consistent initial vertical speed
     });
 
     // Store the body in our map
