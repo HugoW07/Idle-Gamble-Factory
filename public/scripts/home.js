@@ -137,7 +137,7 @@ upgradeBaseIncomeButton.addEventListener("click", () => {
     baseIncomeValue += 1;
 
     // Increase the cost for next upgrade
-    baseIncomeUpgradeCost = Math.round(baseIncomeUpgradeCost * 1.2);
+    baseIncomeUpgradeCost = Math.round(baseIncomeUpgradeCost * 1.5);
 
     updateGameState(); // Update the state
     updateUI();
@@ -156,7 +156,7 @@ upgradeSpeedButton.addEventListener("click", () => {
     speedValue += 1;
 
     // Increase the cost for the next upgrade
-    speedUpgradeCost = Math.round(speedUpgradeCost * 1.2);
+    speedUpgradeCost = Math.round(speedUpgradeCost * 12);
 
     // Update spawn rate for money signs based on speed
     updateMoneySpawnRate();
@@ -180,7 +180,7 @@ upgradeBumperButton.addEventListener("click", () => {
     bumperMultiplier += 0.1;
 
     // Increase the cost for next upgrade
-    bumperUpgradeCost = Math.round(bumperUpgradeCost * 1.2);
+    bumperUpgradeCost = Math.round(bumperUpgradeCost * 2);
 
     updateUI();
   } else {
@@ -206,7 +206,7 @@ function initializePhysics() {
   const wallOptions = {
     isStatic: true,
     restitution: 0.7, // Make walls bouncy
-    friction: 0.1,
+    friction: 0,
     label: "wall",
     collisionFilter: {
       category: 0x0001, // Wall category
@@ -300,7 +300,7 @@ function createBumperBodies() {
     const radius = rect.width / 2;
     const bumperBody = Matter.Bodies.circle(x, y, radius, {
       isStatic: true,
-      restitution: 1.2, // Make bumpers very bouncy
+      restitution: 0.2, // Make bumpers very bouncy
       friction: 0,
       label: "bumper",
       bumperElement: bumper, // Store reference to the DOM element
